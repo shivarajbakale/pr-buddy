@@ -9,18 +9,23 @@
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
+import { fileURLToPath } from 'url';
+
+// Get current directory in ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 class ConfigGenerator {
   constructor() {
-    this.projectRoot = process.cwd();
+    this.projectRoot = path.resolve(__dirname, '..');
     this.serverPath = path.join(this.projectRoot, 'dist', 'index.js');
   }
 
   /**
-   * Generate Claude Desktop configuration
+   * Generate Claude Desktop MCP configuration
    */
   generateClaudeDesktopConfig() {
-    const config = {
+    return JSON.stringify({
       mcpServers: {
         "pr-buddy": {
           command: "node",
@@ -30,67 +35,133 @@ class ConfigGenerator {
           }
         }
       }
-    };
-
-    return JSON.stringify(config, null, 2);
+    }, null, 2);
   }
 
   /**
-   * Generate Cursor configuration
+   * Generate Cursor MCP configuration
    */
   generateCursorConfig() {
-    const config = {
-      "mcp": {
-        "servers": {
+    return JSON.stringify({
+      "mcp.servers": {
+        "pr-buddy": {
+          command: "node",
+          args: [this.serverPath],
+          env: {
+            NODE_ENV: "production"
+          }
+        }
+      }
+    }, null, 2);
+  }
+
+  /**
+   * Generate MCP configuration for package.json
+   */
+  generatePackageJsonMCPConfig() {
+    return {
+      mcp: {
+        servers: {
           "pr-buddy": {
-            "command": "node",
-            "args": [this.serverPath],
-            "env": {
-              "NODE_ENV": "production"
-            }
+            command: "node",
+            args: ["./dist/index.js"],
+            env: {
+              NODE_ENV: "production"
+            },
+            description: "PR Buddy - GitHub CLI integration for AI assistants",
+            tools: [
+              "create_pr",
+              "get_pr_details", 
+              "list_my_prs",
+              "checkout_pr_branch",
+              "add_pr_label",
+              "remove_pr_label",
+              "generate_review_prompt",
+              "generate_code_checklist",
+              "analyze_pr_complexity",
+              "get_pr_diff_summary",
+              "get_pr_stats"
+            ]
           }
         }
       }
     };
-
-    return JSON.stringify(config, null, 2);
   }
 
   /**
-   * Get Claude Desktop config path based on OS
+   * Generate local MCP configuration file
+   */
+  generateLocalMCPConfig() {
+    return JSON.stringify({
+      name: "pr-buddy",
+      version: "1.0.0",
+      description: "GitHub CLI integration for AI assistants via MCP",
+      server: {
+        command: "node",
+        args: ["./dist/index.js"],
+        env: {
+          NODE_ENV: "production"
+        }
+      },
+      tools: {
+        core_github_operations: [
+          "create_pr",
+          "get_pr_details",
+          "list_my_prs", 
+          "checkout_pr_branch",
+          "add_pr_label",
+          "remove_pr_label"
+        ],
+        review_and_analysis: [
+          "generate_review_prompt",
+          "generate_code_checklist", 
+          "analyze_pr_complexity",
+          "get_pr_diff_summary"
+        ],
+        statistics: [
+          "get_pr_stats"
+        ]
+      },
+      usage: {
+        claude_desktop: {
+          config_path: this.getClaudeDesktopConfigPath(),
+          merge_with_existing: true
+        },
+        cursor: {
+          config_path: this.getCursorConfigPath(),
+          merge_with_existing: true
+        }
+      }
+    }, null, 2);
+  }
+
+  /**
+   * Get Claude Desktop config path
    */
   getClaudeDesktopConfigPath() {
     const platform = os.platform();
-    const homeDir = os.homedir();
-
-    switch (platform) {
-      case 'darwin': // macOS
-        return path.join(homeDir, 'Library', 'Application Support', 'Claude', 'claude_desktop_config.json');
-      case 'win32': // Windows
-        return path.join(homeDir, 'AppData', 'Roaming', 'Claude', 'claude_desktop_config.json');
-      case 'linux': // Linux
-        return path.join(homeDir, '.config', 'Claude', 'claude_desktop_config.json');
-      default:
-        throw new Error(`Unsupported platform: ${platform}`);
+    
+    if (platform === 'darwin') {
+      return path.join(os.homedir(), 'Library', 'Application Support', 'Claude', 'claude_desktop_config.json');
+    } else if (platform === 'win32') {
+      return path.join(os.homedir(), 'AppData', 'Roaming', 'Claude', 'claude_desktop_config.json');
+    } else {
+      return path.join(os.homedir(), '.config', 'claude', 'claude_desktop_config.json');
     }
   }
 
   /**
-   * Get Cursor config path based on OS
+   * Get Cursor config path
    */
   getCursorConfigPath() {
     const platform = os.platform();
-    const homeDir = os.homedir();
-
-    switch (platform) {
-      case 'darwin': // macOS
-        return path.join(homeDir, 'Library', 'Application Support', 'Cursor', 'User', 'settings.json');
-      case 'win32': // Windows
-        return path.join(homeDir, 'AppData', 'Roaming', 'Cursor', 'User', 'settings.json');
-      case 'linux': // Linux
-        return path.join(homeDir, '.config', 'Cursor', 'User', 'settings.json');
-      default:
-        throw new Error(`Unsupported platform: ${platform}`);
+    
+    if (platform === 'darwin') {
+      return path.join(os.homedir(), 'Library', 'Application Support', 'Cursor', 'User', 'settings.json');
+    } else if (platform === 'win32') {
+      return path.join(os.homedir(), 'AppData', 'Roaming', 'Cursor', 'User', 'settings.json');
+    } else {
+      return path.join(os.homedir(), '.config', 'Cursor', 'User', 'settings.json');
     }
   }
 
@@ -132,6 +203,29 @@ class ConfigGenerator {
   }
 
   /**
+   * Update package.json with MCP configuration
+   */
+  updatePackageJsonWithMCP() {
+    const packageJsonPath = path.join(this.projectRoot, 'package.json');
+    
+    try {
+      const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+      const mcpConfig = this.generatePackageJsonMCPConfig();
+      
+      // Merge MCP config into package.json
+      const updatedPackageJson = { ...packageJson, ...mcpConfig };
+      
+      fs.writeFileSync(packageJsonPath, JSON.stringify(updatedPackageJson, null, 2) + '\n');
+      console.log('✅ MCP configuration added to package.json');
+      
+      return true;
+    } catch (error) {
+      console.error(`❌ Error updating package.json: ${error.message}`);
+      return false;
+    }
+  }
+
+  /**
    * Create directory if it doesn't exist
    */
   ensureDirectoryExists(filePath) {
@@ -142,10 +236,10 @@ class ConfigGenerator {
   }
 
   /**
-   * Generate and save configurations
+   * Generate and save configurations in project directory
    */
   generateConfigs() {
-    console.log('🚀 Generating MCP configurations for pr-buddy...\n');
+    console.log('🚀 Generating MCP configurations for pr-buddy in project directory...\n');
 
     // Check if server build exists
     if (!fs.existsSync(this.serverPath)) {
@@ -154,45 +248,30 @@ class ConfigGenerator {
     }
 
     try {
-      // Generate Claude Desktop config
-      console.log('📝 Generating Claude Desktop configuration...');
+      // Generate local MCP config file
+      console.log('📝 Generating local MCP configuration...');
+      const mcpConfig = this.generateLocalMCPConfig();
+      const mcpConfigPath = path.join(this.projectRoot, 'mcp-config.json');
+      fs.writeFileSync(mcpConfigPath, mcpConfig);
+      console.log(`✅ Local MCP config saved to: ${mcpConfigPath}`);
+
+      // Update package.json with MCP configuration
+      console.log('\n📝 Adding MCP configuration to package.json...');
+      this.updatePackageJsonWithMCP();
+
+      // Generate Claude Desktop config in project
+      console.log('\n📝 Generating Claude Desktop configuration template...');
       const claudeConfig = this.generateClaudeDesktopConfig();
-      const claudeConfigPath = this.getClaudeDesktopConfigPath();
-      
-      this.ensureDirectoryExists(claudeConfigPath);
-      const mergedClaudeConfig = this.mergeWithExistingConfig(claudeConfigPath, claudeConfig);
-      fs.writeFileSync(claudeConfigPath, mergedClaudeConfig);
-      
-      console.log(`✅ Claude Desktop config saved to: ${claudeConfigPath}`);
+      const claudeConfigPath = path.join(this.projectRoot, 'claude-desktop-config.json');
+      fs.writeFileSync(claudeConfigPath, claudeConfig);
+      console.log(`✅ Claude Desktop config template saved to: ${claudeConfigPath}`);
 
-      // Generate Cursor config
-      console.log('\n📝 Generating Cursor configuration...');
+      // Generate Cursor config in project
+      console.log('\n📝 Generating Cursor configuration template...');
       const cursorConfig = this.generateCursorConfig();
-      const cursorConfigPath = this.getCursorConfigPath();
-      
-      this.ensureDirectoryExists(cursorConfigPath);
-      const mergedCursorConfig = this.mergeWithExistingConfig(cursorConfigPath, cursorConfig);
-      fs.writeFileSync(cursorConfigPath, mergedCursorConfig);
-      
-      console.log(`✅ Cursor config saved to: ${cursorConfigPath}`);
-
-      // Generate example configs in project directory
-      console.log('\n📁 Generating example configs in project directory...');
-      
-      const examplesDir = path.join(this.projectRoot, 'config-examples');
-      this.ensureDirectoryExists(path.join(examplesDir, 'dummy'));
-      
-      fs.writeFileSync(
-        path.join(examplesDir, 'claude-desktop-config.json'),
-        claudeConfig
-      );
-      
-      fs.writeFileSync(
-        path.join(examplesDir, 'cursor-settings.json'),
-        cursorConfig
-      );
-
-      console.log(`✅ Example configs saved to: ${examplesDir}`);
+      const cursorConfigPath = path.join(this.projectRoot, 'cursor-settings.json');
+      fs.writeFileSync(cursorConfigPath, cursorConfig);
+      console.log(`✅ Cursor config template saved to: ${cursorConfigPath}`);
 
       // Generate setup instructions
       this.generateSetupInstructions();
@@ -216,66 +295,87 @@ class ConfigGenerator {
 
 ## Configuration Files Generated
 
-### Claude Desktop
-- **Config Path**: ${this.getClaudeDesktopConfigPath()}
-- **Status**: ✅ Configuration merged with existing settings
+### Local Project Files:
+- **mcp-config.json** - Complete MCP configuration
+- **claude-desktop-config.json** - Template for Claude Desktop
+- **cursor-settings.json** - Template for Cursor
+- **package.json** - Updated with MCP configuration
 
-### Cursor
-- **Config Path**: ${this.getCursorConfigPath()}
-- **Status**: ✅ Configuration merged with existing settings
+### System Configuration Paths:
+- **Claude Desktop**: ${this.getClaudeDesktopConfigPath()}
+- **Cursor**: ${this.getCursorConfigPath()}
+
+## Setup Options
+
+### Option 1: Use Local Configuration Files
+
+#### For Claude Desktop:
+\`\`\`bash
+# Copy the configuration to Claude Desktop
+cp claude-desktop-config.json "${this.getClaudeDesktopConfigPath()}"
+\`\`\`
+
+#### For Cursor:
+\`\`\`bash
+# Copy the configuration to Cursor
+cp cursor-settings.json "${this.getCursorConfigPath()}"
+\`\`\`
+
+### Option 2: Manual Configuration
+
+#### Claude Desktop:
+1. Open: ${this.getClaudeDesktopConfigPath()}
+2. Add the contents of \`claude-desktop-config.json\` to the \`mcpServers\` section
+
+#### Cursor:
+1. Open: ${this.getCursorConfigPath()}
+2. Add the contents of \`cursor-settings.json\` to your settings
+
+### Option 3: Use MCP Configuration Directly
+
+The \`mcp-config.json\` file contains all necessary configuration information and can be used as a reference for manual setup.
 
 ## Next Steps
 
-### For Claude Desktop:
-1. Restart Claude Desktop application
-2. The pr-buddy server should now be available in your conversations
-3. Test with: "List my open PRs" or "Create a PR with template feature"
-
-### For Cursor:
-1. Restart Cursor application
-2. Open Command Palette (Cmd/Ctrl + Shift + P)
-3. Look for MCP-related commands or pr-buddy tools
-4. Test with: "Use pr-buddy to list my PRs"
+1. **Restart your AI assistant** (Claude Desktop or Cursor)
+2. **Test the pr-buddy tools**:
+   - "List my open PRs"
+   - "Create a PR for this branch"
+   - "Generate a review prompt for PR #123"
 
 ## Available Tools
 
 ### Core GitHub Operations:
 - \`create_pr\` - Create PR with template and formatting
-- \`get_pr_details\` - Get comprehensive PR information
+- \`get_pr_details\` - Get comprehensive PR information  
 - \`list_my_prs\` - List current user's open PRs
 - \`checkout_pr_branch\` - Switch to PR branch locally
-- \`add_pr_label\` - Add labels to PR (including Need_preview_env)
-- \`remove_pr_label\` - Remove labels from PR
+- \`add_pr_label\` / \`remove_pr_label\` - Manage PR labels
 
 ### Review & Analysis Tools:
-- \`generate_review_prompt\` - Create staff engineer review prompt
-- \`generate_code_checklist\` - Create code review checklist
+- \`generate_review_prompt\` - Create contextual review prompts
+- \`generate_code_checklist\` - Create code review checklists
 - \`analyze_pr_complexity\` - Assess PR size and complexity
 - \`get_pr_diff_summary\` - Get condensed diff information
 
-### PR Statistics:
-- \`get_pr_stats\` - Get PR statistics by time period (day/week/month)
+### Statistics:
+- \`get_pr_stats\` - Get PR statistics by time period
 
 ## Troubleshooting
 
 ### Common Issues:
-1. **Server not found**: Ensure you've run \`npm run build\` in the pr-buddy directory
+1. **Server not found**: Run \`npm run build\` in the pr-buddy directory
 2. **GitHub CLI errors**: Run \`gh auth status\` to check authentication
-3. **Permission errors**: Ensure the config directories are writable
+3. **Config not loading**: Ensure config files are in the correct locations
 
 ### Testing the Server:
 \`\`\`bash
 # Test the server directly
-node ${this.serverPath}
+node dist/index.js
 \`\`\`
 
-### Manual Configuration:
-If automatic configuration fails, copy the example configs from:
-- \`config-examples/claude-desktop-config.json\`
-- \`config-examples/cursor-settings.json\`
-
 ## Support
-For issues, check the GitHub repository or PRD.md file for detailed documentation.
+Check the GitHub repository or PRD.md for detailed documentation.
 `;
 
     const instructionsPath = path.join(this.projectRoot, 'SETUP.md');
@@ -283,14 +383,20 @@ For issues, check the GitHub repository or PRD.md file for detailed documentatio
     
     console.log(`\n📖 Setup instructions saved to: ${instructionsPath}`);
     console.log('\n🎉 Configuration generation complete!');
+    console.log('\n📋 Files generated in project directory:');
+    console.log('- mcp-config.json (complete MCP configuration)');
+    console.log('- claude-desktop-config.json (Claude Desktop template)');
+    console.log('- cursor-settings.json (Cursor template)');
+    console.log('- package.json (updated with MCP config)');
+    console.log('- SETUP.md (setup instructions)');
     console.log('\n📋 Next steps:');
-    console.log('1. Restart Claude Desktop and/or Cursor');
-    console.log('2. Test the pr-buddy tools in your AI assistant');
-    console.log('3. Check SETUP.md for detailed instructions');
+    console.log('1. Copy configuration files to your AI assistant');
+    console.log('2. Restart Claude Desktop and/or Cursor');
+    console.log('3. Test the pr-buddy tools');
+    console.log('4. Check SETUP.md for detailed instructions');
   }
 }
 
 // Run the configuration generator
-// Run the script if called directly
 const generator = new ConfigGenerator();
 generator.generateConfigs(); 

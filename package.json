@@ -39,5 +39,32 @@
   },
   "engines": {
     "node": ">=18.0.0"
+  },
+  "mcp": {
+    "servers": {
+      "pr-buddy": {
+        "command": "node",
+        "args": [
+          "./dist/index.js"
+        ],
+        "env": {
+          "NODE_ENV": "production"
+        },
+        "description": "PR Buddy - GitHub CLI integration for AI assistants",
+        "tools": [
+          "create_pr",
+          "get_pr_details",
+          "list_my_prs",
+          "checkout_pr_branch",
+          "add_pr_label",
+          "remove_pr_label",
+          "generate_review_prompt",
+          "generate_code_checklist",
+          "analyze_pr_complexity",
+          "get_pr_diff_summary",
+          "get_pr_stats"
+        ]
+      }
+    }
   }
 }
