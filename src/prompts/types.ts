@@ -3,17 +3,21 @@
  * Author: Shivaraj Bakale
  */
 
+type PromptType = 'review' | 'checklist' | 'analysis';
+type ReviewType = 'staff-engineer' | 'security' | 'performance' | 'architecture' | 'junior-dev';
+
 export interface PromptTemplate {
   id: string;
   name: string;
   description: string;
   template: string;
   variables: string[];
-  category: 'review' | 'checklist' | 'analysis';
+  category: PromptType;
 }
 
+
 export interface ReviewPromptConfig {
-  type: 'staff-engineer' | 'security' | 'performance' | 'architecture' | 'junior-dev';
+  type: ReviewType;
   focusAreas: string[];
   includeComplexityAnalysis: boolean;
   includeTimeEstimate: boolean;
