@@ -50,12 +50,12 @@ ${args.focusAreas?.map(area => `• ${area}`).join('\n') || '• Code quality an
 
 export async function handleGenerateCodeChecklist(args: { 
   prNumber: number; 
-  includeStandards?: boolean; 
-  language?: string 
+  includeSecurityChecks?: boolean; 
+  includePerformanceChecks?: boolean 
 }): Promise<ToolResponse> {
   try {
     const pr = await githubCli.getPRDetails(args.prNumber);
-    const checklist = prAnalyzer.generateCodeChecklist(pr, args.includeStandards, args.language);
+    const checklist = prAnalyzer.generateCodeChecklist(pr, args.includeSecurityChecks, args.includePerformanceChecks);
     
     const checklistText = `
 🔍 **Code Review Checklist for PR #${args.prNumber}**

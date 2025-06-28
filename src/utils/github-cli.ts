@@ -328,6 +328,14 @@ export class GitHubCli {
   }
 
   /**
+   * Get PR diff summary with file statistics
+   */
+  async getPRDiffSummary(prNumber: number, _includeFileStats: boolean = true, maxFiles: number = 20): Promise<string> {
+    // _includeFileStats parameter is kept for API compatibility but not used in current implementation
+    return await this.getPRDiff(prNumber, maxFiles);
+  }
+
+  /**
    * Get PR statistics for a time period
    */
   async getPRStats(period: 'day' | 'week' | 'month'): Promise<PRStats> {

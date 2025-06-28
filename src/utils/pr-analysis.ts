@@ -144,30 +144,38 @@ export class PRAnalyzer {
     prompt += `[ ] **COMMENT** - Suggestions for improvement\n`;
     prompt += `[ ] **NEEDS ARCHITECTURE REVIEW** - Escalate to architecture team\n\n`;
     
-    const checklist = [
-      'Architecture alignment verified',
-      'Code quality standards met',
-      'Security implications assessed',
-      'Performance impact evaluated',
-      'Testing coverage adequate',
-      'Documentation updated',
-      'Breaking changes documented',
-      'Deployment plan reviewed',
-    ];
-    
-    const focusAreas = [
-      'System Architecture',
-      'Code Maintainability', 
-      'Security & Compliance',
-      'Performance Impact',
-      'Testing Strategy',
-    ];
+    // Note: checklist and focusAreas are now included in the return object structure
     
     return {
       type: 'staff-engineer',
+      title: `Staff Engineer Review: PR #${pr.number}`,
       prompt,
-      checklist,
-      focusAreas,
+      sections: [{
+        heading: 'Review Focus Areas',
+        questions: [
+          'Does this change align with our system architecture?',
+          'Are the abstractions appropriate and maintainable?',
+          'Are there any potential scalability concerns?'
+        ],
+        focusAreas: [
+          'System Architecture',
+          'Code Maintainability', 
+          'Security & Compliance',
+          'Performance Impact',
+          'Testing Strategy',
+        ]
+      }],
+      checklistItems: [
+        'Architecture alignment verified',
+        'Code quality standards met',
+        'Security implications assessed',
+        'Performance impact evaluated',
+        'Testing coverage adequate',
+        'Documentation updated',
+        'Breaking changes documented',
+        'Deployment plan reviewed',
+      ],
+      timeEstimate: complexity.estimatedReviewTime,
     };
   }
   
@@ -230,7 +238,7 @@ export class PRAnalyzer {
     
     // Add complexity-specific items
     const complexity = this.analyzeComplexity(pr);
-    if (complexity.level === 'high' || complexity.level === 'very-high') {
+    if (complexity.level === 'complex' || complexity.level === 'very-complex') {
       checklist.push(
         '🚨 Multiple reviewers assigned',
         '🚨 Deployment plan discussed',
