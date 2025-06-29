@@ -62,14 +62,14 @@ class PRBuddyServer {
           inputSchema: {
             type: "object",
             properties: {
-              title: SCHEMAS.CREATE_PR.inputSchema.title,
+              ticketNumber: SCHEMAS.CREATE_PR.inputSchema.ticketNumber,
               body: SCHEMAS.CREATE_PR.inputSchema.body,
               base: SCHEMAS.CREATE_PR.inputSchema.base.default("master"),
               head: SCHEMAS.CREATE_PR.inputSchema.head,
               draft: SCHEMAS.CREATE_PR.inputSchema.draft,
               repo: SCHEMAS.CREATE_PR.inputSchema.repositoryUrl,
             },
-            required: ["title", "body", "base", "head", "repo"],
+            required: ["ticketNumber", "body", "base", "head", "repo"],
           },
         },
         {
