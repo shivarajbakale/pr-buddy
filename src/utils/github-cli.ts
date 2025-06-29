@@ -5,12 +5,7 @@
 
 import { exec } from "child_process";
 import { promisify } from "util";
-import {
-  GitHubPR,
-  PRTemplate,
-  GitHubCliError,
-  PRStats,
-} from "../types/index.js";
+import { GitHubPR, GitHubCliError, PRStats } from "../types/index.js";
 
 const execAsync = promisify(exec);
 
@@ -63,125 +58,11 @@ export class GitHubCli {
   }
 
   /**
-   * Get PR templates based on type
-   */
-  private getPRTemplate(type: string): PRTemplate {
-    const templates: Record<string, PRTemplate> = {
-      feature: {
-        type: "feature",
-        title: "feat: ",
-        body: `## 🚀 Feature Description
-
-### What does this PR do?
-<!-- Describe the feature or enhancement -->
-
-### 📸 Screenshots/Demo
-<!-- Add screenshots or demo links if applicable -->
-
-### ✅ Testing
-- [ ] Unit tests added/updated
-- [ ] Integration tests added/updated
-- [ ] Manual testing completed
-
-### 🔄 Breaking Changes
-<!-- List any breaking changes -->
-
-### 📝 Additional Notes
-<!-- Any additional context or notes -->`,
-        labels: ["enhancement", "feature"],
-      },
-      bugfix: {
-        type: "bugfix",
-        title: "fix: ",
-        body: `## 🐛 Bug Fix Description
-
-### What was the issue?
-<!-- Describe the bug that was fixed -->
-
-### 🔧 How was it fixed?
-<!-- Explain the solution -->
-
-### 🧪 Testing
-- [ ] Reproducer added to prevent regression
-- [ ] Existing tests still pass
-- [ ] Manual testing completed
-
-### 📝 Additional Notes
-<!-- Any additional context -->`,
-        labels: ["bug", "fix"],
-      },
-      hotfix: {
-        type: "hotfix",
-        title: "hotfix: ",
-        body: `## 🚨 Hotfix Description
-
-### Critical Issue
-<!-- Describe the critical issue being fixed -->
-
-### 🔥 Urgency
-<!-- Explain why this needs immediate attention -->
-
-### ✅ Verification
-- [ ] Fix verified in production-like environment
-- [ ] No additional regressions introduced
-- [ ] Monitoring in place
-
-### 📝 Post-deploy Actions
-<!-- Actions to take after deployment -->`,
-        labels: ["hotfix", "urgent"],
-      },
-      docs: {
-        type: "docs",
-        title: "docs: ",
-        body: `## 📚 Documentation Update
-
-### What was updated?
-<!-- Describe the documentation changes -->
-
-### 📝 Changes Include
-- [ ] README updates
-- [ ] API documentation
-- [ ] Code comments
-- [ ] Examples/tutorials
-
-### ✅ Review Checklist
-- [ ] Documentation is accurate
-- [ ] Links work correctly
-- [ ] Examples are tested`,
-        labels: ["documentation"],
-      },
-      refactor: {
-        type: "refactor",
-        title: "refactor: ",
-        body: `## ♻️ Refactoring Description
-
-### What was refactored?
-<!-- Describe what code was refactored -->
-
-### 🎯 Goals
-<!-- What improvements were made -->
-
-### ✅ Verification
-- [ ] All existing tests pass
-- [ ] No functionality changes
-- [ ] Performance impact assessed
-- [ ] Code coverage maintained
-
-### 📝 Additional Notes
-<!-- Any additional context -->`,
-        labels: ["refactor", "maintenance"],
-      },
-    };
-
-    return templates[type] ?? templates["feature"]!;
-  }
-
-  /**
    * Create a new pull request
    */
   async createPR(params: {
     title: string;
-    body?: string;
+    body: string;
     template?: string;
     base?: string;
     head?: string;
@@ -193,13 +74,8 @@ export class GitHubCli {
     let command = "pr create";
 
     // Apply template if specified
-    const template = params.template
-      ? this.getPRTemplate(params.template)
-      : null;
-    const finalTitle = template
-      ? `${template.title}${params.title}`
-      : params.title;
-    const finalBody = params.body || template?.body || "";
+    const finalTitle = params.title;
+    const finalBody = params.body;
 
     // Build command
     command += ` --title "${finalTitle.replace(/"/g, '\\"')}"`;
@@ -215,7 +91,7 @@ export class GitHubCli {
     const prNumber = parseInt(prUrl.split("/").pop() || "0");
 
     // Add labels if specified
-    const labelsToAdd = [...(params.labels || []), ...(template?.labels || [])];
+    const labelsToAdd = [...(params.labels || [])];
     if (labelsToAdd.length > 0) {
       await this.addLabels(prNumber, labelsToAdd);
     }

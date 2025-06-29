@@ -13,7 +13,7 @@ function createGitHubCli(repo: string): GitHubCli {
 
 export async function handleCreatePR(args: {
   title: string;
-  body?: string;
+  body: string;
   template?: string;
   base?: string;
   head?: string;

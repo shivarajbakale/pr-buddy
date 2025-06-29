@@ -199,7 +199,7 @@ class PRBuddyServer {
             result = await handleCreatePR(
               args as {
                 title: string;
-                body?: string;
+                body: string;
                 template?: string;
                 base?: string;
                 head?: string;

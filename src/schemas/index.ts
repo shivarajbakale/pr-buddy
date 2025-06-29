@@ -4,7 +4,7 @@
  */
 
 import { z } from "zod";
-import { PR_TEMPLATE } from "../templates/pull_request_template";
+import { PR_TEMPLATE } from "../templates/pull_request_template.js";
 
 // Common repository context schema
 const repositoryContextSchema = {
