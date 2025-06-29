@@ -5,6 +5,15 @@
 
 import { z } from "zod";
 
+// Common repository context schema
+const repositoryContextSchema = {
+  repositoryPath: z.string().optional().describe("Local git repository path"),
+  repositoryUrl: z
+    .string()
+    .optional()
+    .describe("GitHub repository URL (owner/repo format)"),
+};
+
 export const SCHEMAS = {
   CREATE_PR: {
     title: "Create Pull Request",
@@ -31,6 +40,7 @@ export const SCHEMAS = {
         .optional()
         .describe("Assignees for the PR"),
       draft: z.boolean().optional().describe("Create as draft PR"),
+      ...repositoryContextSchema,
     },
   },
 
@@ -40,6 +50,7 @@ export const SCHEMAS = {
     inputSchema: {
       number: z.number().optional().describe("PR number"),
       url: z.string().optional().describe("PR URL (alternative to number)"),
+      ...repositoryContextSchema,
     },
   },
 
@@ -57,6 +68,7 @@ export const SCHEMAS = {
         .max(100)
         .optional()
         .describe("Maximum number of PRs to return"),
+      ...repositoryContextSchema,
     },
   },
 
@@ -69,6 +81,7 @@ export const SCHEMAS = {
         .boolean()
         .optional()
         .describe("Create local branch if it doesn't exist"),
+      ...repositoryContextSchema,
     },
   },
 
@@ -78,6 +91,7 @@ export const SCHEMAS = {
     inputSchema: {
       prNumber: z.number().describe("PR number"),
       labels: z.array(z.string()).describe("Labels to add"),
+      ...repositoryContextSchema,
     },
   },
 
@@ -87,6 +101,7 @@ export const SCHEMAS = {
     inputSchema: {
       prNumber: z.number().describe("PR number"),
       labels: z.array(z.string()).describe("Labels to remove"),
+      ...repositoryContextSchema,
     },
   },
 
@@ -99,6 +114,7 @@ export const SCHEMAS = {
         .enum(["staff-engineer", "security", "performance"])
         .optional()
         .describe("Type of review prompt"),
+      ...repositoryContextSchema,
     },
   },
 
@@ -115,6 +131,7 @@ export const SCHEMAS = {
         .boolean()
         .optional()
         .describe("Include performance-focused checklist items"),
+      ...repositoryContextSchema,
     },
   },
 
@@ -127,6 +144,7 @@ export const SCHEMAS = {
         .boolean()
         .optional()
         .describe("Include improvement recommendations"),
+      ...repositoryContextSchema,
     },
   },
 
@@ -145,6 +163,7 @@ export const SCHEMAS = {
         .max(100)
         .optional()
         .describe("Maximum number of files to show"),
+      ...repositoryContextSchema,
     },
   },
 
@@ -164,6 +183,7 @@ export const SCHEMAS = {
         .boolean()
         .optional()
         .describe("Include day-by-day breakdown"),
+      ...repositoryContextSchema,
     },
   },
 

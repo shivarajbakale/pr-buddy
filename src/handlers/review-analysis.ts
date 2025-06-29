@@ -3,36 +3,66 @@
  * Author: Shivaraj Bakale
  */
 
-import { ToolResponse } from '../types/index.js';
-import { GitHubCli } from '../utils/github-cli.js';
-import { PromptGenerator } from '../prompts/prompt-generator.js';
+import { ToolResponse } from "../types/index.js";
+import { GitHubCli, RepositoryContext } from "../utils/github-cli.js";
+import { PromptGenerator } from "../prompts/prompt-generator.js";
 
-const githubCli = new GitHubCli();
 const promptGenerator = new PromptGenerator();
+
+// Helper function to create GitHubCli with repository context
+function createGitHubCli(context?: {
+  repositoryPath?: string;
+  repositoryUrl?: string;
+}): GitHubCli {
+  const repoContext: RepositoryContext = {
+    workingDirectory: process.cwd(),
+  };
+
+  if (context?.repositoryPath) {
+    repoContext.repositoryPath = context.repositoryPath;
+  }
+  if (context?.repositoryUrl) {
+    repoContext.repositoryUrl = context.repositoryUrl;
+  }
+
+  return new GitHubCli(repoContext);
+}
 
 /**
  * Generate a review prompt for a PR
  */
-export async function handleGenerateReviewPrompt(args: { 
-  prNumber: number; 
-  type?: 'staff-engineer' | 'security' | 'performance' | 'architecture' | 'junior-dev';
+export async function handleGenerateReviewPrompt(args: {
+  prNumber: number;
+  type?:
+    | "staff-engineer"
+    | "security"
+    | "performance"
+    | "architecture"
+    | "junior-dev";
   focusAreas?: string[];
+  repositoryPath?: string;
+  repositoryUrl?: string;
 }): Promise<ToolResponse> {
   try {
+    const repoContext: { repositoryPath?: string; repositoryUrl?: string } = {};
+    if (args.repositoryPath) repoContext.repositoryPath = args.repositoryPath;
+    if (args.repositoryUrl) repoContext.repositoryUrl = args.repositoryUrl;
+
+    const githubCli = createGitHubCli(repoContext);
     const pr = await githubCli.getPRDetails(args.prNumber);
     const config = {
-      type: args.type || 'staff-engineer',
+      type: args.type || "staff-engineer",
       focusAreas: args.focusAreas || [],
       includeComplexityAnalysis: true,
       includeTimeEstimate: true,
     };
-    
+
     const prompt = promptGenerator.generateReviewPromptFromPR(pr, config);
-    
+
     return {
       content: [
         {
-          type: 'text',
+          type: "text",
           text: prompt,
         },
       ],
@@ -41,8 +71,10 @@ export async function handleGenerateReviewPrompt(args: {
     return {
       content: [
         {
-          type: 'text',
-          text: `Error generating review prompt: ${error instanceof Error ? error.message : String(error)}`,
+          type: "text",
+          text: `Error generating review prompt: ${
+            error instanceof Error ? error.message : String(error)
+          }`,
         },
       ],
       isError: true,
@@ -53,12 +85,19 @@ export async function handleGenerateReviewPrompt(args: {
 /**
  * Generate a code review checklist for a PR
  */
-export async function handleGenerateCodeChecklist(args: { 
-  prNumber: number; 
-  includeSecurityChecks?: boolean; 
-  includePerformanceChecks?: boolean 
+export async function handleGenerateCodeChecklist(args: {
+  prNumber: number;
+  includeSecurityChecks?: boolean;
+  includePerformanceChecks?: boolean;
+  repositoryPath?: string;
+  repositoryUrl?: string;
 }): Promise<ToolResponse> {
   try {
+    const repoContext: { repositoryPath?: string; repositoryUrl?: string } = {};
+    if (args.repositoryPath) repoContext.repositoryPath = args.repositoryPath;
+    if (args.repositoryUrl) repoContext.repositoryUrl = args.repositoryUrl;
+
+    const githubCli = createGitHubCli(repoContext);
     const pr = await githubCli.getPRDetails(args.prNumber);
     const config = {
       includeGeneral: true,
@@ -68,13 +107,13 @@ export async function handleGenerateCodeChecklist(args: {
       includeTesting: true,
       includeDocumentation: true,
     };
-    
+
     const checklist = promptGenerator.generateChecklistFromPR(pr, config);
-    
+
     return {
       content: [
         {
-          type: 'text',
+          type: "text",
           text: checklist,
         },
       ],
@@ -83,8 +122,10 @@ export async function handleGenerateCodeChecklist(args: {
     return {
       content: [
         {
-          type: 'text',
-          text: `Error generating code checklist: ${error instanceof Error ? error.message : String(error)}`,
+          type: "text",
+          text: `Error generating code checklist: ${
+            error instanceof Error ? error.message : String(error)
+          }`,
         },
       ],
       isError: true,
@@ -95,38 +136,45 @@ export async function handleGenerateCodeChecklist(args: {
 /**
  * Analyze PR complexity
  */
-export async function handleAnalyzePRComplexity(args: { 
-  prNumber: number; 
-  includeRecommendations?: boolean 
+export async function handleAnalyzePRComplexity(args: {
+  prNumber: number;
+  includeRecommendations?: boolean;
+  repositoryPath?: string;
+  repositoryUrl?: string;
 }): Promise<ToolResponse> {
   try {
+    const repoContext: { repositoryPath?: string; repositoryUrl?: string } = {};
+    if (args.repositoryPath) repoContext.repositoryPath = args.repositoryPath;
+    if (args.repositoryUrl) repoContext.repositoryUrl = args.repositoryUrl;
+
+    const githubCli = createGitHubCli(repoContext);
     const pr = await githubCli.getPRDetails(args.prNumber);
-    
+
     // Create a simple complexity analysis
     const filesChanged = pr.changedFiles || 0;
     const linesAdded = pr.additions || 0;
     const linesDeleted = pr.deletions || 0;
     const totalLines = linesAdded + linesDeleted;
-    
-    let complexity = 'Low';
+
+    let complexity = "Low";
     let score = 0;
-    
+
     // Simple scoring
     if (filesChanged > 10) score += 30;
     else if (filesChanged > 5) score += 15;
     else score += filesChanged * 3;
-    
+
     if (totalLines > 500) score += 40;
     else if (totalLines > 200) score += 25;
     else if (totalLines > 50) score += 15;
     else score += totalLines / 10;
-    
+
     if (pr.isDraft) score += 10;
-    
-    if (score >= 70) complexity = 'Very High';
-    else if (score >= 50) complexity = 'High';
-    else if (score >= 30) complexity = 'Medium';
-    
+
+    if (score >= 70) complexity = "Very High";
+    else if (score >= 50) complexity = "High";
+    else if (score >= 30) complexity = "Medium";
+
     let analysis = `# 📊 PR Complexity Analysis: #${args.prNumber}\n\n`;
     analysis += `**${pr.title}** by @${pr.author}\n\n`;
     analysis += `## Complexity: ${complexity} (${Math.round(score)}/100)\n\n`;
@@ -135,18 +183,18 @@ export async function handleAnalyzePRComplexity(args: {
     analysis += `- **Lines Added:** +${linesAdded}\n`;
     analysis += `- **Lines Deleted:** -${linesDeleted}\n`;
     analysis += `- **Total Changes:** ${totalLines} lines\n`;
-    analysis += `- **Draft Status:** ${pr.isDraft ? 'Yes' : 'No'}\n\n`;
-    
+    analysis += `- **Draft Status:** ${pr.isDraft ? "Yes" : "No"}\n\n`;
+
     if (args.includeRecommendations) {
       analysis += `### Recommendations\n`;
-      if (complexity === 'Very High') {
+      if (complexity === "Very High") {
         analysis += `- 🚨 Consider breaking this into smaller PRs\n`;
         analysis += `- 🚨 Assign multiple reviewers\n`;
         analysis += `- 🚨 Plan extra time for testing\n`;
-      } else if (complexity === 'High') {
+      } else if (complexity === "High") {
         analysis += `- ⚠️ Request thorough review\n`;
         analysis += `- ⚠️ Ensure good test coverage\n`;
-      } else if (complexity === 'Medium') {
+      } else if (complexity === "Medium") {
         analysis += `- ✅ Standard review process should suffice\n`;
         analysis += `- ✅ Verify test coverage\n`;
       } else {
@@ -154,11 +202,11 @@ export async function handleAnalyzePRComplexity(args: {
         analysis += `- ✅ Focus on code quality and style\n`;
       }
     }
-    
+
     return {
       content: [
         {
-          type: 'text',
+          type: "text",
           text: analysis,
         },
       ],
@@ -167,8 +215,10 @@ export async function handleAnalyzePRComplexity(args: {
     return {
       content: [
         {
-          type: 'text',
-          text: `Error analyzing PR complexity: ${error instanceof Error ? error.message : String(error)}`,
+          type: "text",
+          text: `Error analyzing PR complexity: ${
+            error instanceof Error ? error.message : String(error)
+          }`,
         },
       ],
       isError: true,
@@ -179,22 +229,29 @@ export async function handleAnalyzePRComplexity(args: {
 /**
  * Get PR diff summary
  */
-export async function handleGetPRDiffSummary(args: { 
-  prNumber: number; 
-  includeFileStats?: boolean; 
-  maxFiles?: number 
+export async function handleGetPRDiffSummary(args: {
+  prNumber: number;
+  includeFileStats?: boolean;
+  maxFiles?: number;
+  repositoryPath?: string;
+  repositoryUrl?: string;
 }): Promise<ToolResponse> {
   try {
+    const repoContext: { repositoryPath?: string; repositoryUrl?: string } = {};
+    if (args.repositoryPath) repoContext.repositoryPath = args.repositoryPath;
+    if (args.repositoryUrl) repoContext.repositoryUrl = args.repositoryUrl;
+
+    const githubCli = createGitHubCli(repoContext);
     const summary = await githubCli.getPRDiffSummary(
-      args.prNumber, 
-      args.includeFileStats || true, 
+      args.prNumber,
+      args.includeFileStats || true,
       args.maxFiles || 20
     );
-    
+
     return {
       content: [
         {
-          type: 'text',
+          type: "text",
           text: summary,
         },
       ],
@@ -203,11 +260,13 @@ export async function handleGetPRDiffSummary(args: {
     return {
       content: [
         {
-          type: 'text',
-          text: `Error getting PR diff summary: ${error instanceof Error ? error.message : String(error)}`,
+          type: "text",
+          text: `Error getting PR diff summary: ${
+            error instanceof Error ? error.message : String(error)
+          }`,
         },
       ],
       isError: true,
     };
   }
-} 
+}

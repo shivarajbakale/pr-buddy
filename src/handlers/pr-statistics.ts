@@ -4,14 +4,38 @@
  */
 
 import { ToolResponse } from "../types/index.js";
-import { GitHubCli } from "../utils/github-cli.js";
+import { GitHubCli, RepositoryContext } from "../utils/github-cli.js";
 
-const githubCli = new GitHubCli(process.cwd());
+// Helper function to create GitHubCli with repository context
+function createGitHubCli(context?: {
+  repositoryPath?: string;
+  repositoryUrl?: string;
+}): GitHubCli {
+  const repoContext: RepositoryContext = {
+    workingDirectory: process.cwd(),
+  };
+
+  if (context?.repositoryPath) {
+    repoContext.repositoryPath = context.repositoryPath;
+  }
+  if (context?.repositoryUrl) {
+    repoContext.repositoryUrl = context.repositoryUrl;
+  }
+
+  return new GitHubCli(repoContext);
+}
 
 export async function handleGetPRStats(args: {
   period: "day" | "week" | "month";
+  repositoryPath?: string;
+  repositoryUrl?: string;
 }): Promise<ToolResponse> {
   try {
+    const repoContext: { repositoryPath?: string; repositoryUrl?: string } = {};
+    if (args.repositoryPath) repoContext.repositoryPath = args.repositoryPath;
+    if (args.repositoryUrl) repoContext.repositoryUrl = args.repositoryUrl;
+
+    const githubCli = createGitHubCli(repoContext);
     const stats = await githubCli.getPRStats(args.period);
 
     const statsText = `
@@ -23,7 +47,7 @@ export async function handleGetPRStats(args: {
 
 🏢 **Top Repositories**:
 ${stats.topRepositories
-  .map((repo) => `• ${repo.repo}: ${repo.count} PRs (${repo.percentage}%)`)
+  .map((repo: any) => `• ${repo.repo}: ${repo.count} PRs (${repo.percentage}%)`)
   .join("\n")}
 
 📈 **Daily Activity**:
