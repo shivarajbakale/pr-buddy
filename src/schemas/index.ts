@@ -7,11 +7,11 @@ import { z } from "zod";
 
 // Common repository context schema
 const repositoryContextSchema = {
-  repositoryPath: z.string().optional().describe("Local git repository path"),
   repositoryUrl: z
     .string()
-    .optional()
-    .describe("GitHub repository URL (owner/repo format)"),
+    .describe(
+      "GitHub repository, please do a gh repo view to get the details about the repository"
+    ),
 };
 
 export const SCHEMAS = {

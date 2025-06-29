@@ -56,7 +56,7 @@ export class GitHubCli {
 
       // If repository URL is provided, add --repo flag for supported commands
       if (this.repositoryUrl && this.supportsRepoFlag(command)) {
-        fullCommand = `gh ${command} --repo ${this.repositoryUrl}`;
+        fullCommand = `gh ${command} --repo apollo`;
       }
 
       // Determine working directory
