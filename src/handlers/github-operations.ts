@@ -190,6 +190,34 @@ export async function handleCheckoutPRBranch(args: {
   }
 }
 
+export async function handleEnablePreviewEnv(args: {
+  prNumber: number;
+  repo?: string;
+}): Promise<ToolResponse> {
+  try {
+    const githubCli = createGitHubCli(args.repo || "");
+    await githubCli.enablePreviewEnv(args.prNumber, "Need_preview_env");
+    return {
+      content: [
+        {
+          type: "text",
+          text: `✅ Successfully enabled preview env for PR #${args.prNumber}`,
+        },
+      ],
+    };
+  } catch (error: any) {
+    return {
+      content: [
+        {
+          type: "text",
+          text: `❌ Error enabling preview env: ${error.message}`,
+        },
+      ],
+      isError: true,
+    };
+  }
+}
+
 export async function handleAddPRLabel(args: {
   prNumber: number;
   labels: string[];

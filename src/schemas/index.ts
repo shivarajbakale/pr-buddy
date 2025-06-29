@@ -54,6 +54,19 @@ export const SCHEMAS = {
     },
   },
 
+  ENABLE_PREVIEW_ENV: {
+    title: "Enable Preview Environment",
+    description: "Enable preview environment for a pull request",
+    inputSchema: {
+      prNumber: z
+        .number()
+        .describe(
+          "The PR number to enable preview env for. Please use the `get_pr_details` tool to get the PR number"
+        ),
+      ...repositoryContextSchema,
+    },
+  },
+
   LIST_MY_PRS: {
     title: "List My PRs",
     description: "List current user's pull requests",

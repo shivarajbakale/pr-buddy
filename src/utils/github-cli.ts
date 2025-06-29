@@ -63,6 +63,15 @@ export class GitHubCli {
   }
 
   /**
+   * Enable preview environment for a PR by adding the appropriate label
+   */
+  async enablePreviewEnv(prNumber: number, label: string): Promise<string> {
+    const command = `pr edit ${prNumber} --add-label "${label}"`;
+    await this.executeGhCommand(command);
+    return `Successfully enabled preview environment for PR #${prNumber}`;
+  }
+
+  /**
    * Get PR templates based on type
    */
   private getPRTemplate(type: string): PRTemplate {
