@@ -3,15 +3,17 @@
  * Author: Shivaraj Bakale
  */
 
-import { ToolResponse } from '../types/index.js';
-import { GitHubCli } from '../utils/github-cli.js';
+import { ToolResponse } from "../types/index.js";
+import { GitHubCli } from "../utils/github-cli.js";
 
-const githubCli = new GitHubCli();
+const githubCli = new GitHubCli(process.cwd());
 
-export async function handleGetPRStats(args: { period: 'day' | 'week' | 'month' }): Promise<ToolResponse> {
+export async function handleGetPRStats(args: {
+  period: "day" | "week" | "month";
+}): Promise<ToolResponse> {
   try {
     const stats = await githubCli.getPRStats(args.period);
-    
+
     const statsText = `
 📊 **PR Statistics for ${args.period.toUpperCase()}**
 
@@ -20,29 +22,37 @@ export async function handleGetPRStats(args: { period: 'day' | 'week' | 'month' 
 - 📅 Period: ${stats.period}
 
 🏢 **Top Repositories**:
-${stats.topRepositories.map(repo => 
-  `• ${repo.repo}: ${repo.count} PRs (${repo.percentage}%)`
-).join('\n')}
+${stats.topRepositories
+  .map((repo) => `• ${repo.repo}: ${repo.count} PRs (${repo.percentage}%)`)
+  .join("\n")}
 
 📈 **Daily Activity**:
 • See GitHub insights for detailed daily breakdown
 
-${stats.totalMerged === 0 ? '💡 No PRs merged in this period.' : `🎉 Great work! You've been productive with ${stats.totalMerged} merged PRs.`}
+${
+  stats.totalMerged === 0
+    ? "💡 No PRs merged in this period."
+    : `🎉 Great work! You've been productive with ${stats.totalMerged} merged PRs.`
+}
 `;
 
     return {
-      content: [{
-        type: 'text',
-        text: statsText.trim(),
-      }],
+      content: [
+        {
+          type: "text",
+          text: statsText.trim(),
+        },
+      ],
     };
   } catch (error: any) {
     return {
-      content: [{
-        type: 'text',
-        text: `❌ Error getting PR statistics: ${error.message}`,
-      }],
+      content: [
+        {
+          type: "text",
+          text: `❌ Error getting PR statistics: ${error.message}`,
+        },
+      ],
       isError: true,
     };
   }
-} 
+}

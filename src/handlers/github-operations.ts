@@ -6,7 +6,7 @@
 import { ToolResponse } from "../types/index.js";
 import { GitHubCli } from "../utils/github-cli.js";
 
-const githubCli = new GitHubCli();
+const githubCli = new GitHubCli(process.cwd());
 
 export async function handleCreatePR(args: {
   title: string;

@@ -3,27 +3,66 @@
  * Author: Shivaraj Bakale
  */
 
-import { exec } from 'child_process';
-import { promisify } from 'util';
-import { GitHubPR, PRTemplate, GitHubCliError, PRStats } from '../types/index.js';
+import { exec } from "child_process";
+import { promisify } from "util";
+import {
+  GitHubPR,
+  PRTemplate,
+  GitHubCliError,
+  PRStats,
+} from "../types/index.js";
 
 const execAsync = promisify(exec);
 
 export class GitHubCli {
+  private workingDirectory: string;
+
+  constructor(workingDirectory?: string) {
+    this.workingDirectory = workingDirectory || process.cwd();
+  }
+
+  /**
+   * Check if we're in a git repository
+   */
+  private async isGitRepository(): Promise<boolean> {
+    try {
+      await execAsync("git rev-parse --git-dir", {
+        cwd: this.workingDirectory,
+      });
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   /**
    * Execute GitHub CLI command
    */
   private async executeGhCommand(command: string): Promise<string> {
     try {
-      const { stdout, stderr } = await execAsync(`gh ${command}`);
+      // Ensure we're in a git repository
+      const isGitRepo = await this.isGitRepository();
+      if (!isGitRepo) {
+        throw new GitHubCliError(
+          `Not in a git repository. Current directory: ${this.workingDirectory}`
+        );
+      }
+
+      const { stdout, stderr } = await execAsync(`gh ${command}`, {
+        cwd: this.workingDirectory,
+        env: { ...process.env },
+      });
+
       if (stderr && !stdout) {
         throw new GitHubCliError(`GitHub CLI error: ${stderr}`);
       }
       return stdout.trim();
     } catch (error: any) {
-      const ghError = new GitHubCliError(`GitHub CLI command failed: ${error.message}`);
+      const ghError = new GitHubCliError(
+        `GitHub CLI command failed: ${error.message}`
+      );
       ghError.exitCode = error.code || 1;
-      ghError.stderr = error.stderr || '';
+      ghError.stderr = error.stderr || "";
       throw ghError;
     }
   }
@@ -33,7 +72,7 @@ export class GitHubCli {
    */
   async checkAuth(): Promise<boolean> {
     try {
-      await this.executeGhCommand('auth status');
+      await this.executeGhCommand("auth status");
       return true;
     } catch {
       return false;
@@ -46,8 +85,8 @@ export class GitHubCli {
   private getPRTemplate(type: string): PRTemplate {
     const templates: Record<string, PRTemplate> = {
       feature: {
-        type: 'feature',
-        title: 'feat: ',
+        type: "feature",
+        title: "feat: ",
         body: `## 🚀 Feature Description
 
 ### What does this PR do?
@@ -66,11 +105,11 @@ export class GitHubCli {
 
 ### 📝 Additional Notes
 <!-- Any additional context or notes -->`,
-        labels: ['enhancement', 'feature'],
+        labels: ["enhancement", "feature"],
       },
       bugfix: {
-        type: 'bugfix',
-        title: 'fix: ',
+        type: "bugfix",
+        title: "fix: ",
         body: `## 🐛 Bug Fix Description
 
 ### What was the issue?
@@ -86,11 +125,11 @@ export class GitHubCli {
 
 ### 📝 Additional Notes
 <!-- Any additional context -->`,
-        labels: ['bug', 'fix'],
+        labels: ["bug", "fix"],
       },
       hotfix: {
-        type: 'hotfix',
-        title: 'hotfix: ',
+        type: "hotfix",
+        title: "hotfix: ",
         body: `## 🚨 Hotfix Description
 
 ### Critical Issue
@@ -106,11 +145,11 @@ export class GitHubCli {
 
 ### 📝 Post-deploy Actions
 <!-- Actions to take after deployment -->`,
-        labels: ['hotfix', 'urgent'],
+        labels: ["hotfix", "urgent"],
       },
       docs: {
-        type: 'docs',
-        title: 'docs: ',
+        type: "docs",
+        title: "docs: ",
         body: `## 📚 Documentation Update
 
 ### What was updated?
@@ -126,11 +165,11 @@ export class GitHubCli {
 - [ ] Documentation is accurate
 - [ ] Links work correctly
 - [ ] Examples are tested`,
-        labels: ['documentation'],
+        labels: ["documentation"],
       },
       refactor: {
-        type: 'refactor',
-        title: 'refactor: ',
+        type: "refactor",
+        title: "refactor: ",
         body: `## ♻️ Refactoring Description
 
 ### What was refactored?
@@ -147,11 +186,11 @@ export class GitHubCli {
 
 ### 📝 Additional Notes
 <!-- Any additional context -->`,
-        labels: ['refactor', 'maintenance'],
+        labels: ["refactor", "maintenance"],
       },
     };
 
-    return templates[type] ?? templates['feature']!;
+    return templates[type] ?? templates["feature"]!;
   }
 
   /**
@@ -168,25 +207,29 @@ export class GitHubCli {
     assignees?: string[];
     draft?: boolean;
   }): Promise<GitHubPR> {
-    let command = 'pr create';
-    
+    let command = "pr create";
+
     // Apply template if specified
-    const template = params.template ? this.getPRTemplate(params.template) : null;
-    const finalTitle = template ? `${template.title}${params.title}` : params.title;
-    const finalBody = params.body || template?.body || '';
+    const template = params.template
+      ? this.getPRTemplate(params.template)
+      : null;
+    const finalTitle = template
+      ? `${template.title}${params.title}`
+      : params.title;
+    const finalBody = params.body || template?.body || "";
 
     // Build command
     command += ` --title "${finalTitle.replace(/"/g, '\\"')}"`;
     command += ` --body "${finalBody.replace(/"/g, '\\"')}"`;
-    
+
     if (params.base) command += ` --base "${params.base}"`;
     if (params.head) command += ` --head "${params.head}"`;
-    if (params.draft) command += ' --draft';
+    if (params.draft) command += " --draft";
 
     // Create the PR first
     const result = await this.executeGhCommand(command);
     const prUrl = result.trim();
-    const prNumber = parseInt(prUrl.split('/').pop() || '0');
+    const prNumber = parseInt(prUrl.split("/").pop() || "0");
 
     // Add labels if specified
     const labelsToAdd = [...(params.labels || []), ...(template?.labels || [])];
@@ -196,12 +239,16 @@ export class GitHubCli {
 
     // Add reviewers if specified
     if (params.reviewers && params.reviewers.length > 0) {
-      await this.executeGhCommand(`pr edit ${prNumber} --add-reviewer "${params.reviewers.join(',')}"`);
+      await this.executeGhCommand(
+        `pr edit ${prNumber} --add-reviewer "${params.reviewers.join(",")}"`
+      );
     }
 
     // Add assignees if specified
     if (params.assignees && params.assignees.length > 0) {
-      await this.executeGhCommand(`pr edit ${prNumber} --add-assignee "${params.assignees.join(',')}"`);
+      await this.executeGhCommand(
+        `pr edit ${prNumber} --add-assignee "${params.assignees.join(",")}"`
+      );
     }
 
     // Get the full PR details
@@ -219,18 +266,21 @@ export class GitHubCli {
     return {
       number: prData.number,
       title: prData.title,
-      body: prData.body || '',
+      body: prData.body || "",
       state: prData.state,
-      author: prData.author?.login || '',
+      author: prData.author?.login || "",
       url: prData.url,
       headRefName: prData.headRefName,
       baseRefName: prData.baseRefName,
       createdAt: prData.createdAt,
       updatedAt: prData.updatedAt,
-      mergeable: prData.mergeable || 'unknown',
+      mergeable: prData.mergeable || "unknown",
       labels: prData.labels?.map((l: any) => l.name) || [],
       assignees: prData.assignees?.map((a: any) => a.login) || [],
-      reviewers: prData.reviewRequests?.map((r: any) => r.requestedReviewer?.login).filter(Boolean) || [],
+      reviewers:
+        prData.reviewRequests
+          ?.map((r: any) => r.requestedReviewer?.login)
+          .filter(Boolean) || [],
       isDraft: prData.isDraft || false,
       additions: prData.additions || 0,
       deletions: prData.deletions || 0,
@@ -241,7 +291,10 @@ export class GitHubCli {
   /**
    * List user's PRs
    */
-  async listMyPRs(state: string = 'open', limit: number = 10): Promise<GitHubPR[]> {
+  async listMyPRs(
+    state: string = "open",
+    limit: number = 10
+  ): Promise<GitHubPR[]> {
     const command = `pr list --author "@me" --state ${state} --limit ${limit} --json number,title,body,state,author,url,headRefName,baseRefName,createdAt,updatedAt,labels,isDraft`;
     const result = await this.executeGhCommand(command);
     const prsData = JSON.parse(result);
@@ -249,15 +302,15 @@ export class GitHubCli {
     return prsData.map((pr: any) => ({
       number: pr.number,
       title: pr.title,
-      body: pr.body || '',
+      body: pr.body || "",
       state: pr.state,
-      author: pr.author?.login || '',
+      author: pr.author?.login || "",
       url: pr.url,
       headRefName: pr.headRefName,
       baseRefName: pr.baseRefName,
       createdAt: pr.createdAt,
       updatedAt: pr.updatedAt,
-      mergeable: 'unknown',
+      mergeable: "unknown",
       labels: pr.labels?.map((l: any) => l.name) || [],
       assignees: [],
       reviewers: [],
@@ -271,9 +324,14 @@ export class GitHubCli {
   /**
    * Checkout PR branch
    */
-  async checkoutPRBranch(prNumber: number, createLocal: boolean = true): Promise<string> {
+  async checkoutPRBranch(
+    prNumber: number,
+    createLocal: boolean = true
+  ): Promise<string> {
     try {
-      const command = createLocal ? `pr checkout ${prNumber}` : `pr checkout ${prNumber} --detach`;
+      const command = createLocal
+        ? `pr checkout ${prNumber}`
+        : `pr checkout ${prNumber} --detach`;
       await this.executeGhCommand(command);
       return `Successfully checked out PR #${prNumber}`;
     } catch (error) {
@@ -285,18 +343,26 @@ export class GitHubCli {
    * Add labels to PR
    */
   async addLabels(prNumber: number, labels: string[]): Promise<string> {
-    const labelString = labels.map(label => `"${label}"`).join(',');
-    await this.executeGhCommand(`pr edit ${prNumber} --add-label ${labelString}`);
-    return `Successfully added labels [${labels.join(', ')}] to PR #${prNumber}`;
+    const labelString = labels.map((label) => `"${label}"`).join(",");
+    await this.executeGhCommand(
+      `pr edit ${prNumber} --add-label ${labelString}`
+    );
+    return `Successfully added labels [${labels.join(
+      ", "
+    )}] to PR #${prNumber}`;
   }
 
   /**
    * Remove labels from PR
    */
   async removeLabels(prNumber: number, labels: string[]): Promise<string> {
-    const labelString = labels.map(label => `"${label}"`).join(',');
-    await this.executeGhCommand(`pr edit ${prNumber} --remove-label ${labelString}`);
-    return `Successfully removed labels [${labels.join(', ')}] from PR #${prNumber}`;
+    const labelString = labels.map((label) => `"${label}"`).join(",");
+    await this.executeGhCommand(
+      `pr edit ${prNumber} --remove-label ${labelString}`
+    );
+    return `Successfully removed labels [${labels.join(
+      ", "
+    )}] from PR #${prNumber}`;
   }
 
   /**
@@ -305,7 +371,10 @@ export class GitHubCli {
   async getPRDiff(prNumber: number, maxFiles: number = 20): Promise<string> {
     const command = `pr diff ${prNumber} --name-only`;
     const filesResult = await this.executeGhCommand(command);
-    const files = filesResult.split('\n').filter(f => f.trim()).slice(0, maxFiles);
+    const files = filesResult
+      .split("\n")
+      .filter((f) => f.trim())
+      .slice(0, maxFiles);
 
     const statsCommand = `pr view ${prNumber} --json additions,deletions,changedFiles`;
     const statsResult = await this.executeGhCommand(statsCommand);
@@ -316,7 +385,7 @@ export class GitHubCli {
     summary += `**Lines Added:** +${stats.additions || 0}\n`;
     summary += `**Lines Deleted:** -${stats.deletions || 0}\n\n`;
     summary += `**Modified Files:**\n`;
-    files.forEach(file => {
+    files.forEach((file) => {
       summary += `- ${file}\n`;
     });
 
@@ -330,7 +399,11 @@ export class GitHubCli {
   /**
    * Get PR diff summary with file statistics
    */
-  async getPRDiffSummary(prNumber: number, _includeFileStats: boolean = true, maxFiles: number = 20): Promise<string> {
+  async getPRDiffSummary(
+    prNumber: number,
+    _includeFileStats: boolean = true,
+    maxFiles: number = 20
+  ): Promise<string> {
     // _includeFileStats parameter is kept for API compatibility but not used in current implementation
     return await this.getPRDiff(prNumber, maxFiles);
   }
@@ -338,36 +411,34 @@ export class GitHubCli {
   /**
    * Get PR statistics for a time period
    */
-  async getPRStats(period: 'day' | 'week' | 'month'): Promise<PRStats> {
+  async getPRStats(period: "day" | "week" | "month"): Promise<PRStats> {
     const now = new Date();
     let startDate: Date;
-    
+
     switch (period) {
-      case 'day':
+      case "day":
         startDate = new Date(now);
         startDate.setHours(0, 0, 0, 0);
         break;
-      case 'week':
+      case "week":
         startDate = new Date(now);
         startDate.setDate(now.getDate() - 7);
         startDate.setHours(0, 0, 0, 0);
         break;
-      case 'month':
+      case "month":
         startDate = new Date(now);
         startDate.setMonth(now.getMonth() - 1);
         startDate.setHours(0, 0, 0, 0);
         break;
     }
 
-
-    
     // Get merged PRs for the period
     let command = `pr list --author "@me" --state merged --limit 100`;
-    command += ` --json number,title,repository,mergedAt,additions,deletions,changedFiles`;
-    
+    command += ` --json number,title,mergedAt,additions,deletions,changedFiles,headRepository`;
+
     const jsonOutput = await this.executeGhCommand(command);
     const allPrs = JSON.parse(jsonOutput);
-    
+
     // Filter PRs within the time period
     const periodPrs = allPrs.filter((pr: any) => {
       const mergedAt = new Date(pr.mergedAt);
@@ -376,15 +447,50 @@ export class GitHubCli {
 
     // Calculate statistics
     const totalMerged = periodPrs.length;
-    const totalLinesAdded = periodPrs.reduce((sum: number, pr: any) => sum + (pr.additions || 0), 0);
-    const totalLinesDeleted = periodPrs.reduce((sum: number, pr: any) => sum + (pr.deletions || 0), 0);
-    const totalFilesChanged = periodPrs.reduce((sum: number, pr: any) => sum + (pr.changedFiles || 0), 0);
-    const averagePRSize = totalMerged > 0 ? Math.round((totalLinesAdded + totalLinesDeleted) / totalMerged) : 0;
+    const totalLinesAdded = periodPrs.reduce(
+      (sum: number, pr: any) => sum + (pr.additions || 0),
+      0
+    );
+    const totalLinesDeleted = periodPrs.reduce(
+      (sum: number, pr: any) => sum + (pr.deletions || 0),
+      0
+    );
+    const totalFilesChanged = periodPrs.reduce(
+      (sum: number, pr: any) => sum + (pr.changedFiles || 0),
+      0
+    );
+    const averagePRSize =
+      totalMerged > 0
+        ? Math.round((totalLinesAdded + totalLinesDeleted) / totalMerged)
+        : 0;
 
-    // Repository breakdown
+    // Repository breakdown - get current repository name
+    let currentRepoName = "unknown";
+    try {
+      const repoInfoCommand = `repo view --json name`;
+      const repoInfo = await this.executeGhCommand(repoInfoCommand);
+      const repoData = JSON.parse(repoInfo);
+      currentRepoName = repoData.name || "unknown";
+    } catch (error) {
+      // Fallback: try to get repo name from git remote
+      try {
+        const { stdout } = await execAsync("git remote get-url origin", {
+          cwd: this.workingDirectory,
+        });
+        const match = stdout.match(
+          /github\.com[\/:]([^\/]+)\/([^\/\s]+?)(?:\.git)?$/
+        );
+        if (match && match[2]) {
+          currentRepoName = match[2];
+        }
+      } catch {
+        // Keep default "unknown"
+      }
+    }
+
     const repoStats: Record<string, number> = {};
     periodPrs.forEach((pr: any) => {
-      const repoName = pr.repository?.name || 'unknown';
+      const repoName = pr.headRepository?.name || currentRepoName;
       if (repoName) {
         repoStats[repoName] = (repoStats[repoName] || 0) + 1;
       }
@@ -394,7 +500,8 @@ export class GitHubCli {
       .map(([repo, count]) => ({
         repo,
         count,
-        percentage: totalMerged > 0 ? Math.round((count / totalMerged) * 100) : 0
+        percentage:
+          totalMerged > 0 ? Math.round((count / totalMerged) * 100) : 0,
       }))
       .sort((a, b) => b.count - a.count)
       .slice(0, 5);
@@ -402,7 +509,7 @@ export class GitHubCli {
     // Daily breakdown
     const dailyStats: Record<string, number> = {};
     periodPrs.forEach((pr: any) => {
-      const date = new Date(pr.mergedAt).toISOString().split('T')[0];
+      const date = new Date(pr.mergedAt).toISOString().split("T")[0];
       if (date) {
         dailyStats[date] = (dailyStats[date] || 0) + 1;
       }
@@ -425,4 +532,4 @@ export class GitHubCli {
       periodEnd: now.toISOString(),
     };
   }
-} 
+}
