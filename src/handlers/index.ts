@@ -8,7 +8,7 @@ export {
   handleReadFile,
   handleWriteFile,
   handleListDirectory,
-} from './file-operations.js';
+} from "./file-operations.js";
 
 // GitHub Operations
 export {
@@ -16,9 +16,7 @@ export {
   handleGetPRDetails,
   handleListMyPRs,
   handleCheckoutPRBranch,
-  handleAddPRLabel,
-  handleRemovePRLabel,
-} from './github-operations.js';
+} from "./github-operations.js";
 
 // Review & Analysis
 export {
@@ -26,9 +24,7 @@ export {
   handleGenerateCodeChecklist,
   handleAnalyzePRComplexity,
   handleGetPRDiffSummary,
-} from './review-analysis.js';
+} from "./review-analysis.js";
 
 // PR Statistics
-export {
-  handleGetPRStats,
-} from './pr-statistics.js'; 
+export { handleGetPRStats } from "./pr-statistics.js";

@@ -23,8 +23,6 @@ import {
   handleGetPRDetails,
   handleListMyPRs,
   handleCheckoutPRBranch,
-  handleAddPRLabel,
-  handleRemovePRLabel,
   handleGenerateReviewPrompt,
   handleGenerateCodeChecklist,
   handleAnalyzePRComplexity,
@@ -62,14 +60,14 @@ class PRBuddyServer {
           inputSchema: {
             type: "object",
             properties: {
-              ticketNumber: SCHEMAS.CREATE_PR.inputSchema.ticketNumber,
+              title: SCHEMAS.CREATE_PR.inputSchema.title,
               body: SCHEMAS.CREATE_PR.inputSchema.body,
               base: SCHEMAS.CREATE_PR.inputSchema.base.default("master"),
               head: SCHEMAS.CREATE_PR.inputSchema.head,
               draft: SCHEMAS.CREATE_PR.inputSchema.draft,
               repo: SCHEMAS.CREATE_PR.inputSchema.repositoryUrl,
             },
-            required: ["ticketNumber", "body", "base", "head", "repo"],
+            required: ["title", "body", "base", "head", "repo"],
           },
         },
         {
@@ -168,45 +166,32 @@ class PRBuddyServer {
             result = await handleCreatePR(
               args as {
                 title: string;
-                body?: string;
-                template?: string;
-                base?: string;
-                head?: string;
-                labels?: string[];
-                reviewers?: string[];
-                assignees?: string[];
-                draft?: boolean;
+                body: string;
+                base: string;
+                head: string;
+                labels: string[];
+                draft: boolean;
+                repo?: string;
               }
             );
             break;
           case TOOLS.GET_PR_DETAILS:
-            result = await handleGetPRDetails(
-              args as { number?: number; url?: string }
-            );
+            result = await handleGetPRDetails(args as { number: number });
             break;
           case TOOLS.LIST_MY_PRS:
             result = await handleListMyPRs(
-              args as { state?: string; limit?: number }
+              args as { state?: string; limit?: number; repo?: string }
             );
             break;
           case TOOLS.CHECKOUT_PR_BRANCH:
             result = await handleCheckoutPRBranch(
-              args as { prNumber: number; createLocal?: boolean }
+              args as { prNumber: number; createLocal?: boolean; repo?: string }
             );
             break;
-          case TOOLS.ADD_PR_LABEL:
-            result = await handleAddPRLabel(
-              args as { prNumber: number; labels: string[] }
-            );
-            break;
-          case TOOLS.REMOVE_PR_LABEL:
-            result = await handleRemovePRLabel(
-              args as { prNumber: number; labels: string[] }
-            );
-            break;
+
           case TOOLS.GENERATE_REVIEW_PROMPT:
             result = await handleGenerateReviewPrompt(
-              args as { prNumber: number; reviewType?: string }
+              args as { prNumber: number; reviewType?: string; repo?: string }
             );
             break;
           case TOOLS.GENERATE_CODE_CHECKLIST:
@@ -215,12 +200,17 @@ class PRBuddyServer {
                 prNumber: number;
                 includeSecurityChecks?: boolean;
                 includePerformanceChecks?: boolean;
+                repo?: string;
               }
             );
             break;
           case TOOLS.ANALYZE_PR_COMPLEXITY:
             result = await handleAnalyzePRComplexity(
-              args as { prNumber: number; includeRecommendations?: boolean }
+              args as {
+                prNumber: number;
+                includeRecommendations?: boolean;
+                repo?: string;
+              }
             );
             break;
           case TOOLS.GET_PR_DIFF_SUMMARY:
@@ -229,12 +219,13 @@ class PRBuddyServer {
                 prNumber: number;
                 includeFileStats?: boolean;
                 maxFiles?: number;
+                repo?: string;
               }
             );
             break;
           case TOOLS.GET_PR_STATS:
             result = await handleGetPRStats(
-              args as { period: "day" | "week" | "month" }
+              args as { period: "day" | "week" | "month"; repo?: string }
             );
             break;
 

@@ -53,17 +53,20 @@ export const SCHEMAS = {
     title: "Create Pull Request",
     description: "Create a new pull request with template formatting",
     inputSchema: {
-      ticketNumber: z
-        .string()
-        .describe(
-          "Ticket number, please ask the user to provide the JIRA ticket number if not provided"
-        )
-        .default("NOTICKET"),
+      title: z.string().describe(
+        `PR title, please ask the user to provide the JIRA ticket number if not provided. If the user does not provide the JIRA ticket number, please use the default value "NOTICKET".
+          The format for creating the title should be '[JIRA_TICKET-NUMBER]- PR Title'. For the PR title, please understand the changes in the PR after doing a diff with the base branch. 
+          IF no ticket is specified then use the default to :  'NOTICKET - PR Title'.
+          `
+      ),
       body: z
         .string()
         .optional()
         .describe(
-          `Please use the following format to create the PR: ${PR_TEMPLATE}`
+          `Please use the following format to create the PR: ${PR_TEMPLATE}. 
+          Please do a diff with the base branch to understand the changes in the PR and then use the diff to create the PR body.
+          Make sure its very simple and easy to understand. Do not complicate with too many technical details.
+          `
         ),
       base: z
         .string()
