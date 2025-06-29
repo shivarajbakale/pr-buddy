@@ -3,8 +3,13 @@
  * Author: Shivaraj Bakale
  */
 
-type PromptType = 'review' | 'checklist' | 'analysis';
-type ReviewType = 'staff-engineer' | 'security' | 'performance' | 'architecture' | 'junior-dev';
+type PromptType = "review" | "checklist" | "analysis";
+type ReviewType =
+  | "staff-engineer"
+  | "security"
+  | "performance"
+  | "architecture"
+  | "junior-dev";
 
 export interface PromptTemplate {
   id: string;
@@ -14,7 +19,6 @@ export interface PromptTemplate {
   variables: string[];
   category: PromptType;
 }
-
 
 export interface ReviewPromptConfig {
   type: ReviewType;
@@ -50,4 +54,4 @@ export interface PromptContext {
   };
   labels: string[];
   isDraft: boolean;
-} 
+}

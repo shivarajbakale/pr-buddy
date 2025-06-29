@@ -3,15 +3,16 @@
  * Author: Shivaraj Bakale
  */
 
-import { PromptTemplate, PromptContext } from './types.js';
+import { PromptTemplate, PromptContext } from "./types.js";
 
 export const REVIEW_TEMPLATES: Record<string, PromptTemplate> = {
   STAFF_ENGINEER: {
-    id: 'staff-engineer',
-    name: 'Staff Engineer Review',
-    description: 'Technical leadership review focusing on architecture and impact',
-    category: 'review',
-    variables: ['prNumber', 'title', 'author', 'complexity'],
+    id: "staff-engineer",
+    name: "Staff Engineer Review",
+    description:
+      "Technical leadership review focusing on architecture and impact",
+    category: "review",
+    variables: ["prNumber", "title", "author", "complexity"],
     template: `# 🏗️ Staff Engineer Review: PR #{{prNumber}}
 
 **{{title}}** by @{{author}}
@@ -27,15 +28,15 @@ export const REVIEW_TEMPLATES: Record<string, PromptTemplate> = {
 - **Architecture** - System design and patterns
 - **Performance** - Scalability and efficiency  
 - **Security** - Vulnerabilities and compliance
-- **Maintainability** - Code quality and documentation`
+- **Maintainability** - Code quality and documentation`,
   },
 
   SECURITY: {
-    id: 'security-review',
-    name: 'Security Review',
-    description: 'Security-focused review for identifying vulnerabilities',
-    category: 'review',
-    variables: ['prNumber', 'title', 'author'],
+    id: "security-review",
+    name: "Security Review",
+    description: "Security-focused review for identifying vulnerabilities",
+    category: "review",
+    variables: ["prNumber", "title", "author"],
     template: `# 🔒 Security Review: PR #{{prNumber}}
 
 **{{title}}** by @{{author}}
@@ -51,15 +52,15 @@ export const REVIEW_TEMPLATES: Record<string, PromptTemplate> = {
 - Direct database queries without parameterization
 - File uploads without validation
 - Admin endpoints without proper authorization
-- Logging of sensitive information`
+- Logging of sensitive information`,
   },
 
   PERFORMANCE: {
-    id: 'performance-review',
-    name: 'Performance Review',
-    description: 'Performance and scalability focused review',
-    category: 'review',
-    variables: ['prNumber', 'title', 'author'],
+    id: "performance-review",
+    name: "Performance Review",
+    description: "Performance and scalability focused review",
+    category: "review",
+    variables: ["prNumber", "title", "author"],
     template: `# ⚡ Performance Review: PR #{{prNumber}}
 
 **{{title}}** by @{{author}}
@@ -75,15 +76,15 @@ export const REVIEW_TEMPLATES: Record<string, PromptTemplate> = {
 - N+1 query problems
 - Synchronous operations that should be async
 - Large objects in memory
-- Missing pagination on lists`
+- Missing pagination on lists`,
   },
 
   JUNIOR_DEV: {
-    id: 'junior-dev-review',
-    name: 'Junior Developer Review',
-    description: 'Educational review for learning and growth',
-    category: 'review',
-    variables: ['prNumber', 'title', 'author'],
+    id: "junior-dev-review",
+    name: "Junior Developer Review",
+    description: "Educational review for learning and growth",
+    category: "review",
+    variables: ["prNumber", "title", "author"],
     template: `# 📚 Learning-Focused Review: PR #{{prNumber}}
 
 **{{title}}** by @{{author}}
@@ -99,15 +100,15 @@ export const REVIEW_TEMPLATES: Record<string, PromptTemplate> = {
 - What patterns or techniques are used here?
 - How could this be improved or simplified?
 - What edge cases might we be missing?
-- Are there any potential bugs or issues?`
+- Are there any potential bugs or issues?`,
   },
 
   ARCHITECTURE: {
-    id: 'architecture-review',
-    name: 'Architecture Review',
-    description: 'System design and architecture focused review',
-    category: 'review',
-    variables: ['prNumber', 'title', 'author'],
+    id: "architecture-review",
+    name: "Architecture Review",
+    description: "System design and architecture focused review",
+    category: "review",
+    variables: ["prNumber", "title", "author"],
     template: `# 🏛️ Architecture Review: PR #{{prNumber}}
 
 **{{title}}** by @{{author}}
@@ -123,27 +124,36 @@ export const REVIEW_TEMPLATES: Record<string, PromptTemplate> = {
 - Does this fit our existing architecture?
 - Are we introducing unnecessary complexity?
 - Is this the right abstraction level?
-- Will other teams understand this design?`
-  }
+- Will other teams understand this design?`,
+  },
 };
 
 /**
  * Generate a review prompt for the given type and context
  */
-export function generateReviewPrompt(type: string, context: PromptContext): string {
+export function generateReviewPrompt(
+  type: string,
+  context: PromptContext
+): string {
   const template = REVIEW_TEMPLATES[type.toUpperCase()];
   if (!template) {
     throw new Error(`Unknown review template type: ${type}`);
   }
 
   let prompt = template.template;
-  
+
   // Replace template variables
   prompt = prompt.replace(/\{\{prNumber\}\}/g, context.prNumber.toString());
   prompt = prompt.replace(/\{\{title\}\}/g, context.title);
   prompt = prompt.replace(/\{\{author\}\}/g, context.author);
-  prompt = prompt.replace(/\{\{complexity\.level\}\}/g, context.complexity.level);
-  prompt = prompt.replace(/\{\{complexity\.estimatedTime\}\}/g, context.complexity.estimatedTime);
-  
+  prompt = prompt.replace(
+    /\{\{complexity\.level\}\}/g,
+    context.complexity.level
+  );
+  prompt = prompt.replace(
+    /\{\{complexity\.estimatedTime\}\}/g,
+    context.complexity.estimatedTime
+  );
+
   return prompt;
-} 
+}

@@ -3,8 +3,8 @@
  * Author: Shivaraj Bakale
  */
 
-import { ToolResponse } from '../types/index.js';
-import { GitHubCli } from '../utils/github-cli.js';
+import { ToolResponse } from "../types/index.js";
+import { GitHubCli } from "../utils/github-cli.js";
 
 const githubCli = new GitHubCli();
 
@@ -22,26 +22,37 @@ export async function handleCreatePR(args: {
   try {
     const pr = await githubCli.createPR(args);
     return {
-      content: [{
-        type: 'text',
-        text: `✅ Successfully created PR #${pr.number}: ${pr.title}\n🔗 URL: ${pr.url}\n📝 Status: ${pr.isDraft ? 'Draft' : 'Ready for Review'}`,
-      }],
+      content: [
+        {
+          type: "text",
+          text: `✅ Successfully created PR #${pr.number}: ${
+            pr.title
+          }\n🔗 URL: ${pr.url}\n📝 Status: ${
+            pr.isDraft ? "Draft" : "Ready for Review"
+          }`,
+        },
+      ],
     };
   } catch (error: any) {
     return {
-      content: [{
-        type: 'text',
-        text: `❌ Error creating PR: ${error.message}`,
-      }],
+      content: [
+        {
+          type: "text",
+          text: `❌ Error creating PR: ${error.message}`,
+        },
+      ],
       isError: true,
     };
   }
 }
 
-export async function handleGetPRDetails(args: { number?: number; url?: string }): Promise<ToolResponse> {
+export async function handleGetPRDetails(args: {
+  number?: number;
+  url?: string;
+}): Promise<ToolResponse> {
   try {
     if (!args.number) {
-      throw new Error('PR number is required');
+      throw new Error("PR number is required");
     }
     const pr = await githubCli.getPRDetails(args.number);
     const details = `
@@ -49,7 +60,7 @@ export async function handleGetPRDetails(args: { number?: number; url?: string }
 
 👤 **Author**: ${pr.author}
 🌿 **Branch**: ${pr.headRefName} → ${pr.baseRefName}
-📊 **State**: ${pr.state} ${pr.isDraft ? '(Draft)' : ''}
+📊 **State**: ${pr.state} ${pr.isDraft ? "(Draft)" : ""}
 🔗 **URL**: ${pr.url}
 
 📈 **Changes**:
@@ -57,126 +68,170 @@ export async function handleGetPRDetails(args: { number?: number; url?: string }
 - ❌ -${pr.deletions} deletions  
 - 📁 ${pr.changedFiles} files changed
 
-🏷️ **Labels**: ${pr.labels.length > 0 ? pr.labels.join(', ') : 'None'}
-👥 **Reviewers**: ${pr.reviewers.length > 0 ? pr.reviewers.join(', ') : 'None'}
+🏷️ **Labels**: ${pr.labels.length > 0 ? pr.labels.join(", ") : "None"}
+👥 **Reviewers**: ${pr.reviewers.length > 0 ? pr.reviewers.join(", ") : "None"}
 📅 **Created**: ${new Date(pr.createdAt).toLocaleDateString()}
 📅 **Updated**: ${new Date(pr.updatedAt).toLocaleDateString()}
 
 📝 **Description**:
-${pr.body || 'No description provided.'}
+${pr.body || "No description provided."}
 `;
 
     return {
-      content: [{
-        type: 'text',
-        text: details.trim(),
-      }],
+      content: [
+        {
+          type: "text",
+          text: details.trim(),
+        },
+      ],
     };
   } catch (error: any) {
     return {
-      content: [{
-        type: 'text',
-        text: `❌ Error getting PR details: ${error.message}`,
-      }],
+      content: [
+        {
+          type: "text",
+          text: `❌ Error getting PR details: ${error.message}`,
+        },
+      ],
       isError: true,
     };
   }
 }
 
-export async function handleListMyPRs(args: { state?: string; limit?: number }): Promise<ToolResponse> {
+export async function handleListMyPRs(args: {
+  state?: string;
+  limit?: number;
+}): Promise<ToolResponse> {
   try {
     const prs = await githubCli.listMyPRs(args.state, args.limit);
-    
+
     if (prs.length === 0) {
       return {
-        content: [{
-          type: 'text',
-          text: `No PRs found with state: ${args.state || 'open'}`,
-        }],
+        content: [
+          {
+            type: "text",
+            text: `No PRs found with state: ${args.state || "open"}`,
+          },
+        ],
       };
     }
 
-    const prList = prs.map(pr => 
-      `📋 **PR #${pr.number}**: ${pr.title}\n` +
-      `   🌿 ${pr.headRefName} → ${pr.baseRefName}\n` +
-      `   📊 ${pr.state} ${pr.isDraft ? '(Draft)' : ''}\n` +
-      `   📅 ${new Date(pr.updatedAt).toLocaleDateString()}\n` +
-      `   🔗 ${pr.url}\n`
-    ).join('\n');
+    const prList = prs
+      .map(
+        (pr) =>
+          `📋 **PR #${pr.number}**: ${pr.title}\n` +
+          `   🌿 ${pr.headRefName} → ${pr.baseRefName}\n` +
+          `   📊 ${pr.state} ${pr.isDraft ? "(Draft)" : ""}\n` +
+          `   📅 ${new Date(pr.updatedAt).toLocaleDateString()}\n` +
+          `   🔗 ${pr.url}\n`
+      )
+      .join("\n");
 
     return {
-      content: [{
-        type: 'text',
-        text: `🎯 **Your PRs (${args.state || 'open'})**:\n\n${prList}`,
-      }],
+      content: [
+        {
+          type: "text",
+          text: `🎯 **Your PRs (${args.state || "open"})**:\n\n${prList}`,
+        },
+      ],
     };
   } catch (error: any) {
     return {
-      content: [{
-        type: 'text',
-        text: `❌ Error listing PRs: ${error.message}`,
-      }],
+      content: [
+        {
+          type: "text",
+          text: `❌ Error listing PRs: ${error.message}`,
+        },
+      ],
       isError: true,
     };
   }
 }
 
-export async function handleCheckoutPRBranch(args: { prNumber: number; createLocal?: boolean }): Promise<ToolResponse> {
+export async function handleCheckoutPRBranch(args: {
+  prNumber: number;
+  createLocal?: boolean;
+}): Promise<ToolResponse> {
   try {
-    const result = await githubCli.checkoutPRBranch(args.prNumber, args.createLocal);
+    const result = await githubCli.checkoutPRBranch(
+      args.prNumber,
+      args.createLocal
+    );
     return {
-      content: [{
-        type: 'text',
-        text: `✅ Successfully checked out PR #${args.prNumber} branch\n📂 Current branch: ${result}\n📝 Status: Ready`,
-      }],
+      content: [
+        {
+          type: "text",
+          text: `✅ Successfully checked out PR #${args.prNumber} branch\n📂 Current branch: ${result}\n📝 Status: Ready`,
+        },
+      ],
     };
   } catch (error: any) {
     return {
-      content: [{
-        type: 'text',
-        text: `❌ Error checking out PR branch: ${error.message}`,
-      }],
+      content: [
+        {
+          type: "text",
+          text: `❌ Error checking out PR branch: ${error.message}`,
+        },
+      ],
       isError: true,
     };
   }
 }
 
-export async function handleAddPRLabel(args: { prNumber: number; labels: string[] }): Promise<ToolResponse> {
+export async function handleAddPRLabel(args: {
+  prNumber: number;
+  labels: string[];
+}): Promise<ToolResponse> {
   try {
     await githubCli.addLabels(args.prNumber, args.labels);
     return {
-      content: [{
-        type: 'text',
-        text: `✅ Successfully added labels to PR #${args.prNumber}: ${args.labels.join(', ')}`,
-      }],
+      content: [
+        {
+          type: "text",
+          text: `✅ Successfully added labels to PR #${
+            args.prNumber
+          }: ${args.labels.join(", ")}`,
+        },
+      ],
     };
   } catch (error: any) {
     return {
-      content: [{
-        type: 'text',
-        text: `❌ Error adding labels: ${error.message}`,
-      }],
+      content: [
+        {
+          type: "text",
+          text: `❌ Error adding labels: ${error.message}`,
+        },
+      ],
       isError: true,
     };
   }
 }
 
-export async function handleRemovePRLabel(args: { prNumber: number; labels: string[] }): Promise<ToolResponse> {
+export async function handleRemovePRLabel(args: {
+  prNumber: number;
+  labels: string[];
+}): Promise<ToolResponse> {
   try {
     await githubCli.removeLabels(args.prNumber, args.labels);
     return {
-      content: [{
-        type: 'text',
-        text: `✅ Successfully removed labels from PR #${args.prNumber}: ${args.labels.join(', ')}`,
-      }],
+      content: [
+        {
+          type: "text",
+          text: `✅ Successfully removed labels from PR #${
+            args.prNumber
+          }: ${args.labels.join(", ")}`,
+        },
+      ],
     };
   } catch (error: any) {
     return {
-      content: [{
-        type: 'text',
-        text: `❌ Error removing labels: ${error.message}`,
-      }],
+      content: [
+        {
+          type: "text",
+          text: `❌ Error removing labels: ${error.message}`,
+        },
+      ],
       isError: true,
     };
   }
-} 
+}

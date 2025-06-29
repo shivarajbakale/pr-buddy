@@ -3,28 +3,16 @@
  * Author: Shivaraj Bakale
  */
 
-import { GitHubPR } from '../types/index.js';
-import { 
-  PromptContext, 
-  ReviewPromptConfig, 
-  ChecklistConfig
-} from './types.js';
-import { 
-  REVIEW_TEMPLATES, 
-  generateReviewPrompt 
-} from './review-templates.js';
-import { 
-  generateChecklist
-} from './checklist-templates.js';
+import { GitHubPR } from "../types/index.js";
+import { PromptContext, ReviewPromptConfig, ChecklistConfig } from "./types.js";
+import { REVIEW_TEMPLATES, generateReviewPrompt } from "./review-templates.js";
+import { generateChecklist } from "./checklist-templates.js";
 
 export class PromptGenerator {
   /**
    * Generate a review prompt from PR data
    */
-  generateReviewPromptFromPR(
-    pr: GitHubPR, 
-    config: ReviewPromptConfig
-  ): string {
+  generateReviewPromptFromPR(pr: GitHubPR, config: ReviewPromptConfig): string {
     const context = this.createPromptContext(pr);
     return generateReviewPrompt(config.type, context);
   }
@@ -32,10 +20,7 @@ export class PromptGenerator {
   /**
    * Generate a checklist from PR data
    */
-  generateChecklistFromPR(
-    pr: GitHubPR, 
-    config: ChecklistConfig
-  ): string {
+  generateChecklistFromPR(pr: GitHubPR, config: ChecklistConfig): string {
     return generateChecklist(config, pr.number, pr.title, pr.author);
   }
 
@@ -89,13 +74,13 @@ export class PromptGenerator {
 
     // Draft status impact (0-10 points)
     if (pr.isDraft) score += 10;
-    
+
     // Label-based complexity (0-20 points)
-    const labels = pr.labels?.map(l => l.toLowerCase()) || [];
-    if (labels.includes('breaking-change')) score += 15;
-    if (labels.includes('major')) score += 10;
-    if (labels.includes('refactor')) score += 8;
-    if (labels.includes('security')) score += 5;
+    const labels = pr.labels?.map((l) => l.toLowerCase()) || [];
+    if (labels.includes("breaking-change")) score += 15;
+    if (labels.includes("major")) score += 10;
+    if (labels.includes("refactor")) score += 8;
+    if (labels.includes("security")) score += 5;
 
     return Math.min(Math.round(score), 100);
   }
@@ -104,21 +89,21 @@ export class PromptGenerator {
    * Get complexity level from score
    */
   private getComplexityLevel(score: number): string {
-    if (score >= 80) return 'very-complex';
-    if (score >= 60) return 'complex';
-    if (score >= 40) return 'moderate';
-    if (score >= 20) return 'simple';
-    return 'trivial';
+    if (score >= 80) return "very-complex";
+    if (score >= 60) return "complex";
+    if (score >= 40) return "moderate";
+    if (score >= 20) return "simple";
+    return "trivial";
   }
 
   /**
    * Estimate review time based on complexity
    */
   private estimateReviewTime(score: number): string {
-    if (score >= 80) return '2+ hours';
-    if (score >= 60) return '1-2 hours';
-    if (score >= 40) return '30-60 min';
-    if (score >= 20) return '15-30 min';
-    return '5-15 min';
+    if (score >= 80) return "2+ hours";
+    if (score >= 60) return "1-2 hours";
+    if (score >= 40) return "30-60 min";
+    if (score >= 20) return "15-30 min";
+    return "5-15 min";
   }
-} 
+}
