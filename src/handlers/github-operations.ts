@@ -14,18 +14,21 @@ function createGitHubCli(repo: string): GitHubCli {
 export async function handleCreatePR(args: {
   title: string;
   body: string;
-  template?: string;
-  base?: string;
-  head?: string;
-  labels?: string[];
-  reviewers?: string[];
-  assignees?: string[];
-  draft?: boolean;
+  base: string;
+  head: string;
+  labels: string[];
+  draft: boolean;
   repo?: string;
 }): Promise<ToolResponse> {
   try {
     const githubCli = createGitHubCli(args.repo || "");
-    const pr = await githubCli.createPR(args);
+    const pr = await githubCli.createPR({
+      title: args.title,
+      body: args.body,
+      base: args.base,
+      head: args.head,
+      labels: args.labels,
+    });
     return {
       content: [
         {
@@ -190,80 +193,18 @@ export async function handleCheckoutPRBranch(args: {
   }
 }
 
-export async function handleAddPRLabel(args: {
-  prNumber: number;
-  labels: string[];
-  repo?: string;
-}): Promise<ToolResponse> {
-  try {
-    const githubCli = createGitHubCli(args.repo || "");
-    await githubCli.addLabels(args.prNumber, args.labels);
-    return {
-      content: [
-        {
-          type: "text",
-          text: `✅ Successfully added labels to PR #${
-            args.prNumber
-          }: ${args.labels.join(", ")}`,
-        },
-      ],
-    };
-  } catch (error: any) {
-    return {
-      content: [
-        {
-          type: "text",
-          text: `❌ Error adding labels: ${error.message}`,
-        },
-      ],
-      isError: true,
-    };
-  }
-}
-
 export async function handleEnablePreviewEnv(args: {
-  label: string;
-  repo?: string;
-}): Promise<ToolResponse> {
-  try {
-    const githubCli = createGitHubCli(args.repo || "");
-    const result = await githubCli.enablePreviewEnv("Need_Preview_Env");
-    return {
-      content: [
-        {
-          type: "text",
-          text: result,
-        },
-      ],
-    };
-  } catch (error: any) {
-    return {
-      content: [
-        {
-          type: "text",
-          text: `❌ Error enabling preview environment: ${error.message}`,
-        },
-      ],
-      isError: true,
-    };
-  }
-}
-
-export async function handleRemovePRLabel(args: {
   prNumber: number;
-  labels: string[];
   repo?: string;
 }): Promise<ToolResponse> {
   try {
     const githubCli = createGitHubCli(args.repo || "");
-    await githubCli.removeLabels(args.prNumber, args.labels);
+    await githubCli.enablePreviewEnv(args.prNumber, "Need_preview_env");
     return {
       content: [
         {
           type: "text",
-          text: `✅ Successfully removed labels from PR #${
-            args.prNumber
-          }: ${args.labels.join(", ")}`,
+          text: `✅ Successfully enabled preview env for PR #${args.prNumber}`,
         },
       ],
     };
@@ -272,7 +213,7 @@ export async function handleRemovePRLabel(args: {
       content: [
         {
           type: "text",
-          text: `❌ Error removing labels: ${error.message}`,
+          text: `❌ Error enabling preview env: ${error.message}`,
         },
       ],
       isError: true,

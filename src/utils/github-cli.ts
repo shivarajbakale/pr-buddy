@@ -58,22 +58,27 @@ export class GitHubCli {
   }
 
   /**
+   * Enable preview environment for a PR by adding the appropriate label
+   */
+  async enablePreviewEnv(prNumber: number, label: string): Promise<string> {
+    const command = `pr edit ${prNumber} --add-label "${label}"`;
+    await this.executeGhCommand(command);
+    return `Successfully enabled preview environment for PR #${prNumber}`;
+  }
+
+  /**
    * Create a new pull request
    */
   async createPR(params: {
     title: string;
     body: string;
-    template?: string;
-    base?: string;
-    head?: string;
-    labels?: string[];
-    reviewers?: string[];
-    assignees?: string[];
+    base: string;
+    head: string;
+    labels: string[];
     draft?: boolean;
   }): Promise<GitHubPR> {
     let command = "pr create";
 
-    // Apply template if specified
     const finalTitle = params.title;
     const finalBody = params.body;
 
@@ -81,8 +86,8 @@ export class GitHubCli {
     command += ` --title "${finalTitle.replace(/"/g, '\\"')}"`;
     command += ` --body "${finalBody.replace(/"/g, '\\"')}"`;
 
-    if (params.base) command += ` --base "${params.base}"`;
-    if (params.head) command += ` --head "${params.head}"`;
+    command += ` --base "${params.base}"`;
+    command += ` --head "${params.head}"`;
     if (params.draft) command += " --draft";
 
     // Create the PR first
@@ -90,26 +95,7 @@ export class GitHubCli {
     const prUrl = result.trim();
     const prNumber = parseInt(prUrl.split("/").pop() || "0");
 
-    // Add labels if specified
-    const labelsToAdd = [...(params.labels || [])];
-    if (labelsToAdd.length > 0) {
-      await this.addLabels(prNumber, labelsToAdd);
-    }
-
-    // Add reviewers if specified
-    if (params.reviewers && params.reviewers.length > 0) {
-      await this.executeGhCommand(
-        `pr edit ${prNumber} --add-reviewer "${params.reviewers.join(",")}"`
-      );
-    }
-
-    // Add assignees if specified
-    if (params.assignees && params.assignees.length > 0) {
-      await this.executeGhCommand(
-        `pr edit ${prNumber} --add-assignee "${params.assignees.join(",")}"`
-      );
-    }
-
+    await this.addLabels(prNumber, params.labels);
     // Get the full PR details
     return this.getPRDetails(prNumber);
   }
@@ -145,16 +131,6 @@ export class GitHubCli {
       deletions: prData.deletions || 0,
       changedFiles: prData.changedFiles || 0,
     };
-  }
-
-  /**
-   * Add preview environment label to current PR
-   */
-  async enablePreviewEnv(label: string): Promise<string> {
-    // Add the label to the current PR (assuming we're on a PR branch)
-    const command = `pr edit --add-label "${label}"`;
-    await this.executeGhCommand(command);
-    return `Successfully added preview environment label: ${label}`;
   }
 
   /**

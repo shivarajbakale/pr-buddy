@@ -4,7 +4,40 @@
  */
 
 import { z } from "zod";
-import { PR_TEMPLATE } from "../templates/pull_request_template.js";
+
+const PR_TEMPLATE = `
+  <!-- In your PR title make sure to prefix with the JIRA ticket: [INCIDENT-###] PR Title Here -->
+## Briefly describe what led to the creation of this PR
+
+## Describe your changes
+
+## Any guidance to help the reviewer review this PR?
+
+## What manual and/or automated testing did you perform to validate this PR?
+
+## Before/after pictures or videos
+
+| Before | After  |
+| ------ | ------ |
+| value1 | value2 |
+
+## Checklist before requesting a review
+
+- [ ] I have prefixed my PR with the JIRA ticket.
+- [ ] I have performed a self-review of my code.
+- [ ] I have added thorough tests.
+- [ ] I have checked that the PR does not introduce new warnings/errors
+
+## Additional checklist for E2E Test Automation PRs
+
+- [ ] Does the test cover the intended user journey, including both happy path and edge/negative cases?
+- [ ] Are stable selectors (role, aria-label, data-testid) used over dynamic classes or visible text?
+- [ ] Are assertions specific, relevant, and sufficient to validate the business outcome?
+- [ ] Are smart waits, retries, and network intercepts used to avoid flaky tests?
+- [ ] Is the test consistently passing in CI, including the Burn Test job?
+- [ ] Is the test code clear, well-structured, and free from duplication (e.g., uses helpers or custom commands)?
+- [ ] Are the test files and related resources named appropriately and placed in the correct directory?
+`;
 
 // Common repository context schema
 const repositoryContextSchema = {
@@ -17,37 +50,41 @@ const repositoryContextSchema = {
 
 export const SCHEMAS = {
   CREATE_PR: {
-    title: "Create the PR",
+    title: "Create Pull Request",
     description: "Create a new pull request with template formatting",
     inputSchema: {
-      title: z
-        .string()
-        .describe(
-          "Please prefix the title with the JIRA ticket: [INCIDENT-###] - PR Title Here, if no ticket is provided, please use `NOTICKET`- PR Title Here"
-        ),
+      title: z.string().describe(
+        `PR title, please ask the user to provide the JIRA ticket number if not provided. If the user does not provide the JIRA ticket number, please use the default value "NOTICKET".
+          The format for creating the title should be '[JIRA_TICKET-NUMBER]- PR Title'. For the PR title, please understand the changes in the PR after doing a diff with the base branch. 
+          IF no ticket is specified then use the default to :  'NOTICKET - PR Title'.
+          `
+      ),
       body: z
         .string()
-        .describe(
-          `Please do a diff with the base branch (master) and provide the new changes in the PR description/body and then generatre the description using the following template :\n\n${PR_TEMPLATE}`
-        ),
-      template: z
-        .enum(["feature", "bugfix", "hotfix", "docs", "refactor"])
         .optional()
-        .describe("PR template type"),
-      base: z.string().optional().describe("Base branch (defaults to main)"),
+        .describe(
+          `Please use the following format to create the PR: ${PR_TEMPLATE}. 
+          Please do a diff with the base branch to understand the changes in the PR and then use the diff to create the PR body.
+          Make sure its very simple and easy to understand. Do not complicate with too many technical details.
+          `
+        ),
+      base: z
+        .string()
+        .optional()
+        .describe("Base branch (defaults to master)")
+        .default("master"),
       head: z
         .string()
         .optional()
-        .describe("Head branch (defaults to current branch)"),
+        .describe(
+          "Head branch (defaults to current branch). Get the branch using `git branch --show-current`"
+        ),
       labels: z
         .array(z.string())
         .optional()
-        .describe("Labels to add to the PR"),
-      reviewers: z.array(z.string()).optional().describe("Reviewers to assign"),
-      assignees: z
-        .array(z.string())
-        .optional()
-        .describe("Assignees for the PR"),
+        .describe(
+          "Labels to add to the PR. If the user specifies that they want to enable preview environment, add the label `Need_preview_env`"
+        ),
       draft: z.boolean().optional().describe("Create as draft PR"),
       ...repositoryContextSchema,
     },
@@ -57,8 +94,24 @@ export const SCHEMAS = {
     title: "Get PR Details",
     description: "Get comprehensive information about a pull request",
     inputSchema: {
-      number: z.number().optional().describe("PR number"),
-      url: z.string().optional().describe("PR URL (alternative to number)"),
+      number: z
+        .number()
+        .describe(
+          "PR number, use git branch --show-current to get the branch name and then use the `list_my_prs` tool to get the PR number"
+        ),
+      ...repositoryContextSchema,
+    },
+  },
+
+  ENABLE_PREVIEW_ENV: {
+    title: "Enable Preview Environment",
+    description: "Enable preview environment for a pull request",
+    inputSchema: {
+      prNumber: z
+        .number()
+        .describe(
+          "The PR number to enable preview env for. Please use the `get_pr_details` tool to get the PR number"
+        ),
       ...repositoryContextSchema,
     },
   },
@@ -90,26 +143,6 @@ export const SCHEMAS = {
         .boolean()
         .optional()
         .describe("Create local branch if it doesn't exist"),
-      ...repositoryContextSchema,
-    },
-  },
-
-  ADD_PR_LABEL: {
-    title: "Add PR Label",
-    description: "Add labels to a pull request (including Need_preview_env)",
-    inputSchema: {
-      prNumber: z.number().describe("PR number"),
-      labels: z.array(z.string()).describe("Labels to add"),
-      ...repositoryContextSchema,
-    },
-  },
-
-  REMOVE_PR_LABEL: {
-    title: "Remove PR Label",
-    description: "Remove labels from a pull request",
-    inputSchema: {
-      prNumber: z.number().describe("PR number"),
-      labels: z.array(z.string()).describe("Labels to remove"),
       ...repositoryContextSchema,
     },
   },
@@ -157,25 +190,6 @@ export const SCHEMAS = {
     },
   },
 
-  GET_PR_DIFF_SUMMARY: {
-    title: "Get PR Diff Summary",
-    description: "Get a condensed summary of PR changes and statistics",
-    inputSchema: {
-      prNumber: z.number().describe("PR number"),
-      includeFileStats: z
-        .boolean()
-        .optional()
-        .describe("Include per-file statistics"),
-      maxFiles: z
-        .number()
-        .min(1)
-        .max(100)
-        .optional()
-        .describe("Maximum number of files to show"),
-      ...repositoryContextSchema,
-    },
-  },
-
   GET_PR_STATS: {
     title: "Get PR Statistics",
     description:
@@ -192,14 +206,6 @@ export const SCHEMAS = {
         .boolean()
         .optional()
         .describe("Include day-by-day breakdown"),
-      ...repositoryContextSchema,
-    },
-  },
-
-  ENABLE_PREVIEW_ENV: {
-    title: "Enable Preview Environment",
-    description: "Enable the preview environment for a repository",
-    inputSchema: {
       ...repositoryContextSchema,
     },
   },

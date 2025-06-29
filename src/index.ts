@@ -23,8 +23,6 @@ import {
   handleGetPRDetails,
   handleListMyPRs,
   handleCheckoutPRBranch,
-  handleAddPRLabel,
-  handleRemovePRLabel,
   handleGenerateReviewPrompt,
   handleGenerateCodeChecklist,
   handleAnalyzePRComplexity,
@@ -110,37 +108,6 @@ class PRBuddyServer {
             required: ["prNumber", "repo"],
           },
         },
-        {
-          name: TOOLS.ADD_PR_LABEL,
-          description: SCHEMAS.ADD_PR_LABEL.description,
-          inputSchema: {
-            type: "object",
-            properties: {
-              prNumber: SCHEMAS.ADD_PR_LABEL.inputSchema.prNumber,
-              labels: SCHEMAS.ADD_PR_LABEL.inputSchema.labels,
-              repo: SCHEMAS.ADD_PR_LABEL.inputSchema.repositoryUrl,
-            },
-            required: ["prNumber", "labels", "repo"],
-          },
-        },
-        {
-          name: TOOLS.REMOVE_PR_LABEL,
-          description: SCHEMAS.REMOVE_PR_LABEL.description,
-          inputSchema: {
-            type: "object",
-            properties: {
-              prNumber: SCHEMAS.REMOVE_PR_LABEL.inputSchema.prNumber,
-              labels: SCHEMAS.REMOVE_PR_LABEL.inputSchema.labels,
-              repo: SCHEMAS.REMOVE_PR_LABEL.inputSchema.repositoryUrl,
-            },
-            required: ["prNumber", "labels", "repo"],
-          },
-        },
-        {
-          name: TOOLS.ENABLE_PREVIEW_ENV,
-          description: SCHEMAS.ENABLE_PREVIEW_ENV.description,
-          inputSchema: SCHEMAS.ENABLE_PREVIEW_ENV.inputSchema,
-        },
 
         // Review & Analysis Tools
         {
@@ -200,44 +167,31 @@ class PRBuddyServer {
               args as {
                 title: string;
                 body: string;
-                template?: string;
-                base?: string;
-                head?: string;
-                labels?: string[];
-                reviewers?: string[];
-                assignees?: string[];
-                draft?: boolean;
+                base: string;
+                head: string;
+                labels: string[];
+                draft: boolean;
+                repo?: string;
               }
             );
             break;
           case TOOLS.GET_PR_DETAILS:
-            result = await handleGetPRDetails(
-              args as { number?: number; url?: string }
-            );
+            result = await handleGetPRDetails(args as { number: number });
             break;
           case TOOLS.LIST_MY_PRS:
             result = await handleListMyPRs(
-              args as { state?: string; limit?: number }
+              args as { state?: string; limit?: number; repo?: string }
             );
             break;
           case TOOLS.CHECKOUT_PR_BRANCH:
             result = await handleCheckoutPRBranch(
-              args as { prNumber: number; createLocal?: boolean }
+              args as { prNumber: number; createLocal?: boolean; repo?: string }
             );
             break;
-          case TOOLS.ADD_PR_LABEL:
-            result = await handleAddPRLabel(
-              args as { prNumber: number; labels: string[] }
-            );
-            break;
-          case TOOLS.REMOVE_PR_LABEL:
-            result = await handleRemovePRLabel(
-              args as { prNumber: number; labels: string[] }
-            );
-            break;
+
           case TOOLS.GENERATE_REVIEW_PROMPT:
             result = await handleGenerateReviewPrompt(
-              args as { prNumber: number; reviewType?: string }
+              args as { prNumber: number; reviewType?: string; repo?: string }
             );
             break;
           case TOOLS.GENERATE_CODE_CHECKLIST:
@@ -246,12 +200,17 @@ class PRBuddyServer {
                 prNumber: number;
                 includeSecurityChecks?: boolean;
                 includePerformanceChecks?: boolean;
+                repo?: string;
               }
             );
             break;
           case TOOLS.ANALYZE_PR_COMPLEXITY:
             result = await handleAnalyzePRComplexity(
-              args as { prNumber: number; includeRecommendations?: boolean }
+              args as {
+                prNumber: number;
+                includeRecommendations?: boolean;
+                repo?: string;
+              }
             );
             break;
           case TOOLS.GET_PR_DIFF_SUMMARY:
@@ -260,12 +219,13 @@ class PRBuddyServer {
                 prNumber: number;
                 includeFileStats?: boolean;
                 maxFiles?: number;
+                repo?: string;
               }
             );
             break;
           case TOOLS.GET_PR_STATS:
             result = await handleGetPRStats(
-              args as { period: "day" | "week" | "month" }
+              args as { period: "day" | "week" | "month"; repo?: string }
             );
             break;
 
