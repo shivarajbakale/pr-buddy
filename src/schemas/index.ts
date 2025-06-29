@@ -56,7 +56,7 @@ export const SCHEMAS = {
       ticketNumber: z
         .string()
         .describe(
-          "Ticket number, please ask the user to provide the ticket number if not provided"
+          "Ticket number, please ask the user to provide the JIRA ticket number if not provided"
         )
         .default("NOTICKET"),
       body: z
@@ -65,24 +65,23 @@ export const SCHEMAS = {
         .describe(
           `Please use the following format to create the PR: ${PR_TEMPLATE}`
         ),
-      template: z
-        .enum(["feature", "bugfix", "hotfix", "docs", "refactor"])
+      base: z
+        .string()
         .optional()
-        .describe("PR template type"),
-      base: z.string().optional().describe("Base branch (defaults to main)"),
+        .describe("Base branch (defaults to master)")
+        .default("master"),
       head: z
         .string()
         .optional()
-        .describe("Head branch (defaults to current branch)"),
+        .describe(
+          "Head branch (defaults to current branch). Get the branch using `git branch --show-current`"
+        ),
       labels: z
         .array(z.string())
         .optional()
-        .describe("Labels to add to the PR"),
-      reviewers: z.array(z.string()).optional().describe("Reviewers to assign"),
-      assignees: z
-        .array(z.string())
-        .optional()
-        .describe("Assignees for the PR"),
+        .describe(
+          "Labels to add to the PR. If the user specifies that they want to enable preview environment, add the label `Need_preview_env`"
+        ),
       draft: z.boolean().optional().describe("Create as draft PR"),
       ...repositoryContextSchema,
     },
@@ -92,8 +91,11 @@ export const SCHEMAS = {
     title: "Get PR Details",
     description: "Get comprehensive information about a pull request",
     inputSchema: {
-      number: z.number().optional().describe("PR number"),
-      url: z.string().optional().describe("PR URL (alternative to number)"),
+      number: z
+        .number()
+        .describe(
+          "PR number, use git branch --show-current to get the branch name and then use the `list_my_prs` tool to get the PR number"
+        ),
       ...repositoryContextSchema,
     },
   },
@@ -142,26 +144,6 @@ export const SCHEMAS = {
     },
   },
 
-  ADD_PR_LABEL: {
-    title: "Add PR Label",
-    description: "Add labels to a pull request (including Need_preview_env)",
-    inputSchema: {
-      prNumber: z.number().describe("PR number"),
-      labels: z.array(z.string()).describe("Labels to add"),
-      ...repositoryContextSchema,
-    },
-  },
-
-  REMOVE_PR_LABEL: {
-    title: "Remove PR Label",
-    description: "Remove labels from a pull request",
-    inputSchema: {
-      prNumber: z.number().describe("PR number"),
-      labels: z.array(z.string()).describe("Labels to remove"),
-      ...repositoryContextSchema,
-    },
-  },
-
   GENERATE_REVIEW_PROMPT: {
     title: "Generate Review Prompt",
     description: "Create a staff engineer-level review prompt for a PR",
@@ -205,25 +187,6 @@ export const SCHEMAS = {
     },
   },
 
-  GET_PR_DIFF_SUMMARY: {
-    title: "Get PR Diff Summary",
-    description: "Get a condensed summary of PR changes and statistics",
-    inputSchema: {
-      prNumber: z.number().describe("PR number"),
-      includeFileStats: z
-        .boolean()
-        .optional()
-        .describe("Include per-file statistics"),
-      maxFiles: z
-        .number()
-        .min(1)
-        .max(100)
-        .optional()
-        .describe("Maximum number of files to show"),
-      ...repositoryContextSchema,
-    },
-  },
-
   GET_PR_STATS: {
     title: "Get PR Statistics",
     description:
@@ -241,31 +204,6 @@ export const SCHEMAS = {
         .optional()
         .describe("Include day-by-day breakdown"),
       ...repositoryContextSchema,
-    },
-  },
-
-  READ_FILE: {
-    title: "Read File",
-    description: "Read the contents of a file",
-    inputSchema: {
-      path: z.string().describe("Path to the file to read"),
-    },
-  },
-
-  WRITE_FILE: {
-    title: "Write File",
-    description: "Write content to a file",
-    inputSchema: {
-      path: z.string().describe("Path to the file to write"),
-      content: z.string().describe("Content to write to the file"),
-    },
-  },
-
-  LIST_DIRECTORY: {
-    title: "List Directory",
-    description: "List the contents of a directory",
-    inputSchema: {
-      path: z.string().describe("Path to the directory to list"),
     },
   },
 } as const;

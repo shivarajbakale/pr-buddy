@@ -110,32 +110,6 @@ class PRBuddyServer {
             required: ["prNumber", "repo"],
           },
         },
-        {
-          name: TOOLS.ADD_PR_LABEL,
-          description: SCHEMAS.ADD_PR_LABEL.description,
-          inputSchema: {
-            type: "object",
-            properties: {
-              prNumber: SCHEMAS.ADD_PR_LABEL.inputSchema.prNumber,
-              labels: SCHEMAS.ADD_PR_LABEL.inputSchema.labels,
-              repo: SCHEMAS.ADD_PR_LABEL.inputSchema.repositoryUrl,
-            },
-            required: ["prNumber", "labels", "repo"],
-          },
-        },
-        {
-          name: TOOLS.REMOVE_PR_LABEL,
-          description: SCHEMAS.REMOVE_PR_LABEL.description,
-          inputSchema: {
-            type: "object",
-            properties: {
-              prNumber: SCHEMAS.REMOVE_PR_LABEL.inputSchema.prNumber,
-              labels: SCHEMAS.REMOVE_PR_LABEL.inputSchema.labels,
-              repo: SCHEMAS.REMOVE_PR_LABEL.inputSchema.repositoryUrl,
-            },
-            required: ["prNumber", "labels", "repo"],
-          },
-        },
 
         // Review & Analysis Tools
         {
