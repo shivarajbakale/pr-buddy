@@ -272,6 +272,16 @@ export class GitHubCli {
   }
 
   /**
+   * Add preview environment label to current PR
+   */
+  async enablePreviewEnv(label: string): Promise<string> {
+    // Add the label to the current PR (assuming we're on a PR branch)
+    const command = `pr edit --add-label "${label}"`;
+    await this.executeGhCommand(command);
+    return `Successfully added preview environment label: ${label}`;
+  }
+
+  /**
    * List user's PRs
    */
   async listMyPRs(

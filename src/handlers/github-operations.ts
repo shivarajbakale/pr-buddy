@@ -221,6 +221,34 @@ export async function handleAddPRLabel(args: {
   }
 }
 
+export async function handleEnablePreviewEnv(args: {
+  label: string;
+  repo?: string;
+}): Promise<ToolResponse> {
+  try {
+    const githubCli = createGitHubCli(args.repo || "");
+    const result = await githubCli.enablePreviewEnv("Need_Preview_Env");
+    return {
+      content: [
+        {
+          type: "text",
+          text: result,
+        },
+      ],
+    };
+  } catch (error: any) {
+    return {
+      content: [
+        {
+          type: "text",
+          text: `❌ Error enabling preview environment: ${error.message}`,
+        },
+      ],
+      isError: true,
+    };
+  }
+}
+
 export async function handleRemovePRLabel(args: {
   prNumber: number;
   labels: string[];

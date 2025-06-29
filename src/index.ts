@@ -136,6 +136,11 @@ class PRBuddyServer {
             required: ["prNumber", "labels", "repo"],
           },
         },
+        {
+          name: TOOLS.ENABLE_PREVIEW_ENV,
+          description: SCHEMAS.ENABLE_PREVIEW_ENV.description,
+          inputSchema: SCHEMAS.ENABLE_PREVIEW_ENV.inputSchema,
+        },
 
         // Review & Analysis Tools
         {
