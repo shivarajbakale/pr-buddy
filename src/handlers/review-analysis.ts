@@ -4,28 +4,14 @@
  */
 
 import { ToolResponse } from "../types/index.js";
-import { GitHubCli, RepositoryContext } from "../utils/github-cli.js";
+import { GitHubCli } from "../utils/github-cli.js";
 import { PromptGenerator } from "../prompts/prompt-generator.js";
 
 const promptGenerator = new PromptGenerator();
 
 // Helper function to create GitHubCli with repository context
-function createGitHubCli(context?: {
-  repositoryPath?: string;
-  repositoryUrl?: string;
-}): GitHubCli {
-  const repoContext: RepositoryContext = {
-    workingDirectory: process.cwd(),
-  };
-
-  if (context?.repositoryPath) {
-    repoContext.repositoryPath = context.repositoryPath;
-  }
-  if (context?.repositoryUrl) {
-    repoContext.repositoryUrl = context.repositoryUrl;
-  }
-
-  return new GitHubCli(repoContext);
+function createGitHubCli(repo: string): GitHubCli {
+  return new GitHubCli(repo);
 }
 
 /**
@@ -40,15 +26,10 @@ export async function handleGenerateReviewPrompt(args: {
     | "architecture"
     | "junior-dev";
   focusAreas?: string[];
-  repositoryPath?: string;
-  repositoryUrl?: string;
+  repo?: string;
 }): Promise<ToolResponse> {
   try {
-    const repoContext: { repositoryPath?: string; repositoryUrl?: string } = {};
-    if (args.repositoryPath) repoContext.repositoryPath = args.repositoryPath;
-    if (args.repositoryUrl) repoContext.repositoryUrl = args.repositoryUrl;
-
-    const githubCli = createGitHubCli(repoContext);
+    const githubCli = createGitHubCli(args.repo || "");
     const pr = await githubCli.getPRDetails(args.prNumber);
     const config = {
       type: args.type || "staff-engineer",
@@ -89,15 +70,10 @@ export async function handleGenerateCodeChecklist(args: {
   prNumber: number;
   includeSecurityChecks?: boolean;
   includePerformanceChecks?: boolean;
-  repositoryPath?: string;
-  repositoryUrl?: string;
+  repo?: string;
 }): Promise<ToolResponse> {
   try {
-    const repoContext: { repositoryPath?: string; repositoryUrl?: string } = {};
-    if (args.repositoryPath) repoContext.repositoryPath = args.repositoryPath;
-    if (args.repositoryUrl) repoContext.repositoryUrl = args.repositoryUrl;
-
-    const githubCli = createGitHubCli(repoContext);
+    const githubCli = createGitHubCli(args.repo || "");
     const pr = await githubCli.getPRDetails(args.prNumber);
     const config = {
       includeGeneral: true,
@@ -139,15 +115,10 @@ export async function handleGenerateCodeChecklist(args: {
 export async function handleAnalyzePRComplexity(args: {
   prNumber: number;
   includeRecommendations?: boolean;
-  repositoryPath?: string;
-  repositoryUrl?: string;
+  repo?: string;
 }): Promise<ToolResponse> {
   try {
-    const repoContext: { repositoryPath?: string; repositoryUrl?: string } = {};
-    if (args.repositoryPath) repoContext.repositoryPath = args.repositoryPath;
-    if (args.repositoryUrl) repoContext.repositoryUrl = args.repositoryUrl;
-
-    const githubCli = createGitHubCli(repoContext);
+    const githubCli = createGitHubCli(args.repo || "");
     const pr = await githubCli.getPRDetails(args.prNumber);
 
     // Create a simple complexity analysis
@@ -233,15 +204,10 @@ export async function handleGetPRDiffSummary(args: {
   prNumber: number;
   includeFileStats?: boolean;
   maxFiles?: number;
-  repositoryPath?: string;
-  repositoryUrl?: string;
+  repo?: string;
 }): Promise<ToolResponse> {
   try {
-    const repoContext: { repositoryPath?: string; repositoryUrl?: string } = {};
-    if (args.repositoryPath) repoContext.repositoryPath = args.repositoryPath;
-    if (args.repositoryUrl) repoContext.repositoryUrl = args.repositoryUrl;
-
-    const githubCli = createGitHubCli(repoContext);
+    const githubCli = createGitHubCli(args.repo || "");
     const summary = await githubCli.getPRDiffSummary(
       args.prNumber,
       args.includeFileStats || true,
