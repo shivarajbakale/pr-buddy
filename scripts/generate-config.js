@@ -56,39 +56,6 @@ class ConfigGenerator {
   }
 
   /**
-   * Generate MCP configuration for package.json
-   */
-  generatePackageJsonMCPConfig() {
-    return {
-      mcp: {
-        servers: {
-          "pr-buddy": {
-            command: "node",
-            args: ["./dist/index.js"],
-            env: {
-              NODE_ENV: "production"
-            },
-            description: "PR Buddy - GitHub CLI integration for AI assistants",
-            tools: [
-              "create_pr",
-              "get_pr_details", 
-              "list_my_prs",
-              "checkout_pr_branch",
-              "add_pr_label",
-              "remove_pr_label",
-              "generate_review_prompt",
-              "generate_code_checklist",
-              "analyze_pr_complexity",
-              "get_pr_diff_summary",
-              "get_pr_stats"
-            ]
-          }
-        }
-      }
-    };
-  }
-
-  /**
    * Generate local MCP configuration file
    */
   generateLocalMCPConfig() {
@@ -166,80 +133,10 @@ class ConfigGenerator {
   }
 
   /**
-   * Merge configuration with existing file
-   */
-  mergeWithExistingConfig(configPath, newConfig) {
-    let existingConfig = {};
-    
-    try {
-      if (fs.existsSync(configPath)) {
-        const existingContent = fs.readFileSync(configPath, 'utf8');
-        existingConfig = JSON.parse(existingContent);
-      }
-    } catch (error) {
-      console.warn(`Warning: Could not read existing config at ${configPath}: ${error.message}`);
-    }
-
-    // Deep merge the configurations
-    const mergedConfig = this.deepMerge(existingConfig, JSON.parse(newConfig));
-    return JSON.stringify(mergedConfig, null, 2);
-  }
-
-  /**
-   * Deep merge two objects
-   */
-  deepMerge(target, source) {
-    const result = { ...target };
-    
-    for (const key in source) {
-      if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key])) {
-        result[key] = this.deepMerge(result[key] || {}, source[key]);
-      } else {
-        result[key] = source[key];
-      }
-    }
-    
-    return result;
-  }
-
-  /**
-   * Update package.json with MCP configuration
-   */
-  updatePackageJsonWithMCP() {
-    const packageJsonPath = path.join(this.projectRoot, 'package.json');
-    
-    try {
-      const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
-      const mcpConfig = this.generatePackageJsonMCPConfig();
-      
-      // Merge MCP config into package.json
-      const updatedPackageJson = { ...packageJson, ...mcpConfig };
-      
-      fs.writeFileSync(packageJsonPath, JSON.stringify(updatedPackageJson, null, 2) + '\n');
-      console.log('✅ MCP configuration added to package.json');
-      
-      return true;
-    } catch (error) {
-      console.error(`❌ Error updating package.json: ${error.message}`);
-      return false;
-    }
-  }
-
-  /**
-   * Create directory if it doesn't exist
-   */
-  ensureDirectoryExists(filePath) {
-    const dir = path.dirname(filePath);
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
-  }
-
-  /**
-   * Generate and save configurations in project directory
+   * Generate and save configurations in project directory only
    */
   generateConfigs() {
-    console.log('🚀 Generating MCP configurations for pr-buddy in project directory...\n');
+    console.log('🚀 Generating MCP configurations for pr-buddy...\n');
 
     // Check if server build exists
     if (!fs.existsSync(this.serverPath)) {
@@ -254,10 +151,6 @@ class ConfigGenerator {
       const mcpConfigPath = path.join(this.projectRoot, 'mcp-config.json');
       fs.writeFileSync(mcpConfigPath, mcpConfig);
       console.log(`✅ Local MCP config saved to: ${mcpConfigPath}`);
-
-      // Update package.json with MCP configuration
-      console.log('\n📝 Adding MCP configuration to package.json...');
-      this.updatePackageJsonWithMCP();
 
       // Generate Claude Desktop config in project
       console.log('\n📝 Generating Claude Desktop configuration template...');
@@ -299,7 +192,6 @@ class ConfigGenerator {
 - **mcp-config.json** - Complete MCP configuration
 - **claude-desktop-config.json** - Template for Claude Desktop
 - **cursor-settings.json** - Template for Cursor
-- **package.json** - Updated with MCP configuration
 
 ### System Configuration Paths:
 - **Claude Desktop**: ${this.getClaudeDesktopConfigPath()}
@@ -307,7 +199,7 @@ class ConfigGenerator {
 
 ## Setup Options
 
-### Option 1: Use Local Configuration Files
+### Option 1: Copy Configuration Files
 
 #### For Claude Desktop:
 \`\`\`bash
@@ -387,7 +279,6 @@ Check the GitHub repository or PRD.md for detailed documentation.
     console.log('- mcp-config.json (complete MCP configuration)');
     console.log('- claude-desktop-config.json (Claude Desktop template)');
     console.log('- cursor-settings.json (Cursor template)');
-    console.log('- package.json (updated with MCP config)');
     console.log('- SETUP.md (setup instructions)');
     console.log('\n📋 Next steps:');
     console.log('1. Copy configuration files to your AI assistant');

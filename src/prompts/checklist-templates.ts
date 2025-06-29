@@ -3,15 +3,15 @@
  * Author: Shivaraj Bakale
  */
 
-import { PromptTemplate, ChecklistConfig } from './types.js';
+import { PromptTemplate, ChecklistConfig } from "./types.js";
 
 export const CHECKLIST_TEMPLATES: Record<string, PromptTemplate> = {
   GENERAL_CODE_REVIEW: {
-    id: 'general-code-review',
-    name: 'General Code Review Checklist',
-    description: 'Essential code review checklist for all PRs',
-    category: 'checklist',
-    variables: ['prNumber', 'title', 'author'],
+    id: "general-code-review",
+    name: "General Code Review Checklist",
+    description: "Essential code review checklist for all PRs",
+    category: "checklist",
+    variables: ["prNumber", "title", "author"],
     template: `# ✅ Code Review Checklist: PR #{{prNumber}}
 
 **{{title}}** by @{{author}}
@@ -29,24 +29,19 @@ export const CHECKLIST_TEMPLATES: Record<string, PromptTemplate> = {
 - [ ] Existing tests still pass
 - [ ] Manual testing completed
 
-## Documentation
-- [ ] Code comments explain complex logic
-- [ ] README updated if needed
-- [ ] API documentation updated if needed
-
 ## Security & Performance
 - [ ] No hardcoded secrets or credentials
 - [ ] Input validation in place
 - [ ] No obvious performance issues
-- [ ] Database queries are efficient`
+- [ ] Database queries are efficient`,
   },
 
   SECURITY_CHECKLIST: {
-    id: 'security-checklist',
-    name: 'Security Checklist',
-    description: 'Security-focused review checklist',
-    category: 'checklist',
-    variables: ['prNumber', 'title', 'author'],
+    id: "security-checklist",
+    name: "Security Checklist",
+    description: "Security-focused review checklist",
+    category: "checklist",
+    variables: ["prNumber", "title", "author"],
     template: `# 🔒 Security Checklist: PR #{{prNumber}}
 
 **{{title}}** by @{{author}}
@@ -69,15 +64,15 @@ export const CHECKLIST_TEMPLATES: Record<string, PromptTemplate> = {
 - [ ] No known vulnerable packages
 - [ ] HTTPS enforced where needed
 - [ ] Security headers implemented
-- [ ] Rate limiting considered`
+- [ ] Rate limiting considered`,
   },
 
   PERFORMANCE_CHECKLIST: {
-    id: 'performance-checklist',
-    name: 'Performance Checklist',
-    description: 'Performance and scalability checklist',
-    category: 'checklist',
-    variables: ['prNumber', 'title', 'author'],
+    id: "performance-checklist",
+    name: "Performance Checklist",
+    description: "Performance and scalability checklist",
+    category: "checklist",
+    variables: ["prNumber", "title", "author"],
     template: `# ⚡ Performance Checklist: PR #{{prNumber}}
 
 **{{title}}** by @{{author}}
@@ -103,15 +98,15 @@ export const CHECKLIST_TEMPLATES: Record<string, PromptTemplate> = {
 ## Scalability
 - [ ] Will handle increased load
 - [ ] Pagination for large datasets
-- [ ] Resource limits considered`
+- [ ] Resource limits considered`,
   },
 
   FRONTEND_CHECKLIST: {
-    id: 'frontend-checklist',
-    name: 'Frontend Checklist',
-    description: 'Frontend-specific review checklist',
-    category: 'checklist',
-    variables: ['prNumber', 'title', 'author'],
+    id: "frontend-checklist",
+    name: "Frontend Checklist",
+    description: "Frontend-specific review checklist",
+    category: "checklist",
+    variables: ["prNumber", "title", "author"],
     template: `# 🎨 Frontend Checklist: PR #{{prNumber}}
 
 **{{title}}** by @{{author}}
@@ -138,25 +133,18 @@ export const CHECKLIST_TEMPLATES: Record<string, PromptTemplate> = {
 ## Testing
 - [ ] Unit tests for components
 - [ ] Integration tests for flows
-- [ ] Visual regression tests if needed`
+- [ ] Visual regression tests if needed`,
   },
 
   API_CHECKLIST: {
-    id: 'api-checklist',
-    name: 'API Checklist',
-    description: 'Backend API review checklist',
-    category: 'checklist',
-    variables: ['prNumber', 'title', 'author'],
+    id: "api-checklist",
+    name: "API Checklist",
+    description: "Backend API review checklist",
+    category: "checklist",
+    variables: ["prNumber", "title", "author"],
     template: `# 🔌 API Checklist: PR #{{prNumber}}
 
 **{{title}}** by @{{author}}
-
-## API Design
-- [ ] Endpoints follow RESTful principles
-- [ ] Request/response schemas defined
-- [ ] Proper HTTP status codes used
-- [ ] Consistent error format
-- [ ] API versioning considered
 
 ## Validation & Security
 - [ ] Input validation comprehensive
@@ -175,14 +163,19 @@ export const CHECKLIST_TEMPLATES: Record<string, PromptTemplate> = {
 - [ ] Database migrations included
 - [ ] Data validation in place
 - [ ] Transactions used appropriately
-- [ ] Backup/rollback plan considered`
-  }
+- [ ] Backup/rollback plan considered`,
+  },
 };
 
 /**
  * Generate a checklist based on configuration
  */
-export function generateChecklist(config: ChecklistConfig, prNumber: number, title: string, author: string): string {
+export function generateChecklist(
+  config: ChecklistConfig,
+  prNumber: number,
+  title: string,
+  author: string
+): string {
   let checklist = `# 📋 Code Review Checklist: PR #${prNumber}\n\n`;
   checklist += `**${title}** by @${author}\n\n`;
 
@@ -236,7 +229,7 @@ export function generateChecklist(config: ChecklistConfig, prNumber: number, tit
 
   if (config.customItems && config.customItems.length > 0) {
     checklist += `## Custom Items\n`;
-    config.customItems.forEach(item => {
+    config.customItems.forEach((item) => {
       checklist += `- [ ] ${item}\n`;
     });
     checklist += `\n`;
@@ -248,6 +241,8 @@ export function generateChecklist(config: ChecklistConfig, prNumber: number, tit
 /**
  * Get a specific checklist template
  */
-export function getChecklistTemplate(templateId: string): PromptTemplate | null {
+export function getChecklistTemplate(
+  templateId: string
+): PromptTemplate | null {
   return CHECKLIST_TEMPLATES[templateId.toUpperCase()] || null;
-} 
+}

@@ -10,7 +10,6 @@
 - **mcp-config.json** - Complete MCP configuration
 - **claude-desktop-config.json** - Template for Claude Desktop
 - **cursor-settings.json** - Template for Cursor
-- **package.json** - Updated with MCP configuration
 
 ### System Configuration Paths:
 - **Claude Desktop**: /Users/shivarajbakale/Library/Application Support/Claude/claude_desktop_config.json
@@ -18,7 +17,7 @@
 
 ## Setup Options
 
-### Option 1: Use Local Configuration Files
+### Option 1: Copy Configuration Files
 
 #### For Claude Desktop:
 ```bash
