@@ -22,4 +22,7 @@ export const TOOLS = {
   GET_PR_DIFF_SUMMARY: "get_pr_diff_summary",
 
   GET_PR_STATS: "get_pr_stats",
+
+  // Create a day
+  CREATE_DAY: "create_day",
 } as const;
