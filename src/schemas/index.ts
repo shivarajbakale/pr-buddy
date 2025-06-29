@@ -10,7 +10,7 @@ const repositoryContextSchema = {
   repositoryUrl: z
     .string()
     .describe(
-      "GitHub repository, please do a gh repo view to get the details about the repository"
+      "GitHub repository, please do a `git config --get remote.origin.url` to get the details about the repository and then use the output to parse the repository name"
     ),
 };
 

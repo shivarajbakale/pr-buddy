@@ -21,29 +21,10 @@ export interface RepositoryContext {
 }
 
 export class GitHubCli {
-  private workingDirectory: string;
-  private repositoryUrl: string | undefined;
-  private repositoryPath: string | undefined;
+  private repo: string;
 
-  constructor(context?: RepositoryContext) {
-    this.workingDirectory =
-      context?.workingDirectory || context?.repositoryPath || process.cwd();
-    this.repositoryUrl = context?.repositoryUrl;
-    this.repositoryPath = context?.repositoryPath;
-  }
-
-  /**
-   * Check if we're in a git repository
-   */
-  private async isGitRepository(): Promise<boolean> {
-    try {
-      await execAsync("git rev-parse --git-dir", {
-        cwd: this.workingDirectory,
-      });
-      return true;
-    } catch {
-      return false;
-    }
+  constructor(repo: string) {
+    this.repo = repo;
   }
 
   /**
@@ -52,30 +33,9 @@ export class GitHubCli {
   private async executeGhCommand(command: string): Promise<string> {
     try {
       // Add repository context to command if available
-      let fullCommand = `gh ${command}`;
+      let fullCommand = `gh ${command} --repo ${this.repo}`;
 
-      // If repository URL is provided, add --repo flag for supported commands
-      if (this.repositoryUrl && this.supportsRepoFlag(command)) {
-        fullCommand = `gh ${command} --repo apollo`;
-      }
-
-      // Determine working directory
-      const workingDir = this.repositoryPath || this.workingDirectory;
-
-      // Check if we're in a git repo only if no explicit repository context
-      if (!this.repositoryUrl && !this.repositoryPath) {
-        const isGitRepo = await this.isGitRepository();
-        if (!isGitRepo) {
-          throw new GitHubCliError(
-            `Not in a git repository. Current directory: ${workingDir}. Please provide repository context.`
-          );
-        }
-      }
-
-      const { stdout, stderr } = await execAsync(fullCommand, {
-        cwd: workingDir,
-        env: { ...process.env },
-      });
+      const { stdout, stderr } = await execAsync(fullCommand);
 
       if (stderr && !stdout) {
         throw new GitHubCliError(`GitHub CLI error: ${stderr}`);
@@ -90,28 +50,6 @@ export class GitHubCli {
       throw ghError;
     }
   }
-
-  /**
-   * Check if command supports --repo flag
-   */
-  private supportsRepoFlag(command: string): boolean {
-    const supportedCommands = [
-      "pr list",
-      "pr view",
-      "pr create",
-      "pr edit",
-      "pr merge",
-      "pr close",
-      "pr reopen",
-      "issue list",
-      "issue view",
-      "issue create",
-      "repo view",
-    ];
-
-    return supportedCommands.some((cmd) => command.startsWith(cmd));
-  }
-
   /**
    * Check if GitHub CLI is installed and authenticated
    */
@@ -519,9 +457,7 @@ export class GitHubCli {
     } catch (error) {
       // Fallback: try to get repo name from git remote
       try {
-        const { stdout } = await execAsync("git remote get-url origin", {
-          cwd: this.workingDirectory,
-        });
+        const { stdout } = await execAsync("git remote get-url origin");
         const match = stdout.match(
           /github\.com[\/:]([^\/]+)\/([^\/\s]+?)(?:\.git)?$/
         );
