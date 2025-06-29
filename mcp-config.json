@@ -1,0 +1,43 @@
+{
+  "name": "pr-buddy",
+  "version": "1.0.0",
+  "description": "GitHub CLI integration for AI assistants via MCP",
+  "server": {
+    "command": "node",
+    "args": [
+      "./dist/index.js"
+    ],
+    "env": {
+      "NODE_ENV": "production"
+    }
+  },
+  "tools": {
+    "core_github_operations": [
+      "create_pr",
+      "get_pr_details",
+      "list_my_prs",
+      "checkout_pr_branch",
+      "add_pr_label",
+      "remove_pr_label"
+    ],
+    "review_and_analysis": [
+      "generate_review_prompt",
+      "generate_code_checklist",
+      "analyze_pr_complexity",
+      "get_pr_diff_summary"
+    ],
+    "statistics": [
+      "get_pr_stats"
+    ]
+  },
+  "usage": {
+    "claude_desktop": {
+      "config_path": "/Users/shivarajbakale/Library/Application Support/Claude/claude_desktop_config.json",
+      "merge_with_existing": true
+    },
+    "cursor": {
+      "config_path": "/Users/shivarajbakale/Library/Application Support/Cursor/User/settings.json",
+      "merge_with_existing": true
+    }
+  }
+}
