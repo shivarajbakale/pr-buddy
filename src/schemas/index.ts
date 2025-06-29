@@ -27,7 +27,6 @@ export const SCHEMAS = {
         ),
       body: z
         .string()
-        .optional()
         .describe(
           `Please do a diff with the base branch (master) and provide the new changes in the PR description/body and then generatre the description using the following template :\n\n${PR_TEMPLATE}`
         ),
