@@ -268,6 +268,7 @@ class PRBuddyServer {
 }
 
 const server = new PRBuddyServer();
+
 server.run().catch((error) => {
   console.error("Failed to run server:", error);
   process.exit(1);

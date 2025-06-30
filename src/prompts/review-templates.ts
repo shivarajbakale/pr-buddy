@@ -18,6 +18,12 @@ export const REVIEW_TEMPLATES: Record<string, PromptTemplate> = {
 **{{title}}** by @{{author}}
 **Complexity:** {{complexity.level}} ({{complexity.estimatedTime}})
 
+## 📋 Review Process
+Please analyze the changes by examining the diff between the current branch and the base branch. Focus on:
+- Files modified, added, or deleted
+- Line-by-line changes and their implications
+- Impact on existing functionality and architecture
+
 ## Key Questions
 - Does this align with our architecture vision?
 - Will this scale and be maintainable?
@@ -40,6 +46,13 @@ export const REVIEW_TEMPLATES: Record<string, PromptTemplate> = {
     template: `# 🔒 Security Review: PR #{{prNumber}}
 
 **{{title}}** by @{{author}}
+
+## 📋 Review Process
+Please analyze the changes by examining the diff between the current branch and the base branch. Pay special attention to:
+- New code paths and entry points
+- Changes to authentication/authorization logic
+- Data handling and validation modifications
+- Dependencies and configuration changes
 
 ## Security Checklist
 - **Input Validation** - All user inputs validated and sanitized?
@@ -65,6 +78,13 @@ export const REVIEW_TEMPLATES: Record<string, PromptTemplate> = {
 
 **{{title}}** by @{{author}}
 
+## 📋 Review Process
+Please analyze the changes by examining the diff between the current branch and the base branch. Focus on:
+- Database queries and data access patterns
+- Algorithm changes and computational complexity
+- Memory usage and resource allocation
+- Network calls and caching strategies
+
 ## Performance Checklist
 - **Database** - Queries optimized, indexes in place?
 - **Memory** - No obvious leaks or excessive usage?
@@ -88,6 +108,13 @@ export const REVIEW_TEMPLATES: Record<string, PromptTemplate> = {
     template: `# 📚 Learning-Focused Review: PR #{{prNumber}}
 
 **{{title}}** by @{{author}}
+
+## 📋 Review Process
+Please analyze the changes by examining the diff between the current branch and the base branch. Look at:
+- What files were changed and why
+- How the new code integrates with existing code
+- The coding patterns and techniques used
+- Test coverage for the changes
 
 ## Code Quality Basics
 - **Readability** - Is the code easy to understand?
@@ -113,6 +140,13 @@ export const REVIEW_TEMPLATES: Record<string, PromptTemplate> = {
 
 **{{title}}** by @{{author}}
 
+## 📋 Review Process
+Please analyze the changes by examining the diff between the current branch and the base branch. Focus on:
+- Structural changes to the codebase
+- New abstractions and design patterns
+- Module dependencies and interfaces
+- Impact on overall system architecture
+
 ## Architecture Questions
 - **Design Patterns** - Are appropriate patterns used?
 - **Separation of Concerns** - Is responsibility clearly divided?
@@ -129,15 +163,31 @@ export const REVIEW_TEMPLATES: Record<string, PromptTemplate> = {
 };
 
 /**
+ * Convert review type to template key
+ */
+function getTemplateKey(type: string): string {
+  // Handle hyphenated types by converting to underscore format
+  const normalizedType = type.replace(/-/g, "_").toUpperCase();
+  return normalizedType;
+}
+
+/**
  * Generate a review prompt for the given type and context
  */
 export function generateReviewPrompt(
   type: string,
   context: PromptContext
 ): string {
-  const template = REVIEW_TEMPLATES[type.toUpperCase()];
+  const templateKey = getTemplateKey(type);
+  const template = REVIEW_TEMPLATES[templateKey];
+
   if (!template) {
-    throw new Error(`Unknown review template type: ${type}`);
+    const availableTypes = Object.keys(REVIEW_TEMPLATES)
+      .map((key) => key.toLowerCase().replace(/_/g, "-"))
+      .join(", ");
+    throw new Error(
+      `Unknown review template type: ${type}. Available types: ${availableTypes}`
+    );
   }
 
   let prompt = template.template;

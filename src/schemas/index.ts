@@ -153,7 +153,13 @@ export const SCHEMAS = {
     inputSchema: {
       prNumber: z.number().describe("PR number"),
       reviewType: z
-        .enum(["staff-engineer", "security", "performance"])
+        .enum([
+          "staff-engineer",
+          "security",
+          "performance",
+          "architecture",
+          "junior-dev",
+        ])
         .optional()
         .describe("Type of review prompt"),
       ...repositoryContextSchema,
