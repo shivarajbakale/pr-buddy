@@ -16,6 +16,7 @@ export {
   handleGetPRDetails,
   handleListMyPRs,
   handleCheckoutPRBranch,
+  handleEnablePreviewEnv,
 } from "./github-operations.js";
 
 // Review & Analysis

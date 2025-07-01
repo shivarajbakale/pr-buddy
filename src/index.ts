@@ -23,6 +23,7 @@ import {
   handleGetPRDetails,
   handleListMyPRs,
   handleCheckoutPRBranch,
+  handleEnablePreviewEnv,
   handleGenerateReviewPrompt,
   handleGenerateCodeChecklist,
   handleAnalyzePRComplexity,
@@ -138,7 +139,18 @@ class PRBuddyServer {
             required: ["prNumber", "includeRecommendations", "repo"],
           },
         },
-
+        {
+          name: TOOLS.ENABLE_PREVIEW_ENV,
+          description: SCHEMAS.ENABLE_PREVIEW_ENV.description,
+          inputSchema: {
+            type: "object",
+            properties: {
+              prNumber: SCHEMAS.ENABLE_PREVIEW_ENV.inputSchema.prNumber,
+              repo: SCHEMAS.ENABLE_PREVIEW_ENV.inputSchema.repositoryUrl,
+            },
+            required: ["prNumber", "repo"],
+          },
+        },
         // PR Statistics
         {
           name: TOOLS.GET_PR_STATS,
@@ -188,7 +200,11 @@ class PRBuddyServer {
               args as { prNumber: number; createLocal?: boolean; repo?: string }
             );
             break;
-
+          case TOOLS.ENABLE_PREVIEW_ENV:
+            result = await handleEnablePreviewEnv(
+              args as { prNumber: number; repo?: string }
+            );
+            break;
           case TOOLS.GENERATE_REVIEW_PROMPT:
             result = await handleGenerateReviewPrompt(
               args as { prNumber: number; reviewType?: string; repo?: string }
