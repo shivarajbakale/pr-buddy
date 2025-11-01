@@ -20,6 +20,7 @@ import { TOOLS } from "./tools/index.js";
 import { SCHEMAS } from "./schemas/index.js";
 import {
   handleCreatePR,
+  handleEditPR,
   handleGetPRDetails,
   handleListMyPRs,
   handleCheckoutPRBranch,
@@ -84,13 +85,37 @@ class PRBuddyServer {
           },
         },
         {
+          name: TOOLS.EDIT_PR,
+          description: SCHEMAS.EDIT_PR.description,
+          inputSchema: {
+            type: "object",
+            properties: {
+              number: SCHEMAS.EDIT_PR.inputSchema.number,
+              title: SCHEMAS.EDIT_PR.inputSchema.title,
+              body: SCHEMAS.EDIT_PR.inputSchema.body,
+              base: SCHEMAS.EDIT_PR.inputSchema.base,
+              state: SCHEMAS.EDIT_PR.inputSchema.state,
+              addLabels: SCHEMAS.EDIT_PR.inputSchema.addLabels,
+              removeLabels: SCHEMAS.EDIT_PR.inputSchema.removeLabels,
+              repo: SCHEMAS.EDIT_PR.inputSchema.repositoryUrl,
+            },
+            required: ["number", "repo"],
+          },
+        },
+        {
           name: TOOLS.LIST_MY_PRS,
           description: SCHEMAS.LIST_MY_PRS.description,
           inputSchema: {
             type: "object",
             properties: {
+              author: SCHEMAS.LIST_MY_PRS.inputSchema.author,
               state: SCHEMAS.LIST_MY_PRS.inputSchema.state,
+              isDraft: SCHEMAS.LIST_MY_PRS.inputSchema.isDraft,
+              dateFrom: SCHEMAS.LIST_MY_PRS.inputSchema.dateFrom,
+              dateTo: SCHEMAS.LIST_MY_PRS.inputSchema.dateTo,
               limit: SCHEMAS.LIST_MY_PRS.inputSchema.limit,
+              includeLabels: SCHEMAS.LIST_MY_PRS.inputSchema.includeLabels,
+              includeStats: SCHEMAS.LIST_MY_PRS.inputSchema.includeStats,
               repo: SCHEMAS.LIST_MY_PRS.inputSchema.repositoryUrl,
             },
             required: ["repo"],
@@ -137,6 +162,39 @@ class PRBuddyServer {
               repo: SCHEMAS.ANALYZE_PR_COMPLEXITY.inputSchema.repositoryUrl,
             },
             required: ["prNumber", "includeRecommendations", "repo"],
+          },
+        },
+        {
+          name: TOOLS.GENERATE_CODE_CHECKLIST,
+          description: SCHEMAS.GENERATE_CODE_CHECKLIST.description,
+          inputSchema: {
+            type: "object",
+            properties: {
+              prNumber: SCHEMAS.GENERATE_CODE_CHECKLIST.inputSchema.prNumber,
+              includeSecurityChecks:
+                SCHEMAS.GENERATE_CODE_CHECKLIST.inputSchema
+                  .includeSecurityChecks,
+              includePerformanceChecks:
+                SCHEMAS.GENERATE_CODE_CHECKLIST.inputSchema
+                  .includePerformanceChecks,
+              repo: SCHEMAS.GENERATE_CODE_CHECKLIST.inputSchema.repositoryUrl,
+            },
+            required: ["prNumber", "repo"],
+          },
+        },
+        {
+          name: TOOLS.GET_PR_DIFF_SUMMARY,
+          description: SCHEMAS.GET_PR_DIFF_SUMMARY.description,
+          inputSchema: {
+            type: "object",
+            properties: {
+              prNumber: SCHEMAS.GET_PR_DIFF_SUMMARY.inputSchema.prNumber,
+              includeFileStats:
+                SCHEMAS.GET_PR_DIFF_SUMMARY.inputSchema.includeFileStats,
+              maxFiles: SCHEMAS.GET_PR_DIFF_SUMMARY.inputSchema.maxFiles,
+              repo: SCHEMAS.GET_PR_DIFF_SUMMARY.inputSchema.repositoryUrl,
+            },
+            required: ["prNumber", "repo"],
           },
         },
         {
@@ -190,9 +248,33 @@ class PRBuddyServer {
           case TOOLS.GET_PR_DETAILS:
             result = await handleGetPRDetails(args as { number: number });
             break;
+          case TOOLS.EDIT_PR:
+            result = await handleEditPR(
+              args as {
+                number: number;
+                title?: string;
+                body?: string;
+                base?: string;
+                state?: "open" | "closed";
+                addLabels?: string[];
+                removeLabels?: string[];
+                repo?: string;
+              }
+            );
+            break;
           case TOOLS.LIST_MY_PRS:
             result = await handleListMyPRs(
-              args as { state?: string; limit?: number; repo?: string }
+              args as {
+                author?: string;
+                state?: string;
+                isDraft?: boolean;
+                dateFrom?: string;
+                dateTo?: string;
+                limit?: number;
+                includeLabels?: boolean;
+                includeStats?: boolean;
+                repo?: string;
+              }
             );
             break;
           case TOOLS.CHECKOUT_PR_BRANCH:

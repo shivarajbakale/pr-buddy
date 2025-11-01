@@ -134,15 +134,41 @@ export class GitHubCli {
   }
 
   /**
-   * List user's PRs
+   * List user's PRs with versatile filtering
    */
   async listMyPRs(
-    state: string = "open",
-    limit: number = 10
+    author: string,
+    state: string,
+    limit: number,
+    includeStats: boolean,
+    isDraft?: boolean,
+    dateFrom?: string,
+    dateTo?: string
   ): Promise<GitHubPR[]> {
-    const command = `pr list --author "@me" --state ${state} --limit ${limit} --json number,title,body,state,author,url,headRefName,baseRefName,createdAt,updatedAt,labels,isDraft`;
+    // Build JSON fields to fetch
+    let jsonFields = "number,title,body,state,author,url,headRefName,baseRefName,createdAt,updatedAt,labels,isDraft";
+    if (includeStats) {
+      jsonFields += ",additions,deletions,changedFiles";
+    }
+
+    const command = `pr list --author "${author}" --state ${state} --limit ${limit} --json ${jsonFields}`;
     const result = await this.executeGhCommand(command);
-    const prsData = JSON.parse(result);
+    let prsData = JSON.parse(result);
+
+    // Client-side filtering for draft status
+    if (isDraft !== undefined) {
+      prsData = prsData.filter((pr: any) => pr.isDraft === isDraft);
+    }
+
+    // Client-side filtering for date range
+    if (dateFrom || dateTo) {
+      prsData = prsData.filter((pr: any) => {
+        const prDate = new Date(pr.updatedAt);
+        if (dateFrom && prDate < new Date(dateFrom)) return false;
+        if (dateTo && prDate > new Date(dateTo + "T23:59:59")) return false;
+        return true;
+      });
+    }
 
     return prsData.map((pr: any) => ({
       number: pr.number,
@@ -160,9 +186,9 @@ export class GitHubCli {
       assignees: [],
       reviewers: [],
       isDraft: pr.isDraft || false,
-      additions: 0,
-      deletions: 0,
-      changedFiles: 0,
+      additions: includeStats ? pr.additions || 0 : 0,
+      deletions: includeStats ? pr.deletions || 0 : 0,
+      changedFiles: includeStats ? pr.changedFiles || 0 : 0,
     }));
   }
 
@@ -182,6 +208,72 @@ export class GitHubCli {
     } catch (error) {
       throw new GitHubCliError(`Failed to checkout PR #${prNumber}: ${error}`);
     }
+  }
+
+  /**
+   * Edit pull request details
+   */
+  async editPR(params: {
+    number: number;
+    title?: string;
+    body?: string;
+    base?: string;
+    state?: "open" | "closed";
+    addLabels?: string[];
+    removeLabels?: string[];
+  }): Promise<GitHubPR> {
+    const { number, title, body, base, state, addLabels, removeLabels } =
+      params;
+
+    // Validate that at least one field is being updated
+    if (
+      !title &&
+      !body &&
+      !base &&
+      !state &&
+      (!addLabels || addLabels.length === 0) &&
+      (!removeLabels || removeLabels.length === 0)
+    ) {
+      throw new GitHubCliError(
+        "At least one field must be provided to edit the PR"
+      );
+    }
+
+    let command = `pr edit ${number}`;
+
+    // Add optional parameters
+    if (title) {
+      command += ` --title "${title.replace(/"/g, '\\"')}"`;
+    }
+    if (body) {
+      command += ` --body "${body.replace(/"/g, '\\"')}"`;
+    }
+    if (base) {
+      command += ` --base "${base}"`;
+    }
+
+    // Handle state change
+    if (state === "closed") {
+      await this.executeGhCommand(`pr close ${number}`);
+    } else if (state === "open") {
+      await this.executeGhCommand(`pr reopen ${number}`);
+    }
+
+    // Execute main edit command if there are fields to update
+    if (title || body || base) {
+      await this.executeGhCommand(command);
+    }
+
+    // Handle label operations
+    if (addLabels && addLabels.length > 0) {
+      await this.addLabels(number, addLabels);
+    }
+    if (removeLabels && removeLabels.length > 0) {
+      await this.removeLabels(number, removeLabels);
+    }
+
+    // Return updated PR details
+    return this.getPRDetails(number);
   }
 
   /**

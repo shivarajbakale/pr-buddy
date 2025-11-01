@@ -3,16 +3,10 @@
  * Author: Shivaraj Bakale
  */
 
-// File Operations
-export {
-  handleReadFile,
-  handleWriteFile,
-  handleListDirectory,
-} from "./file-operations.js";
-
 // GitHub Operations
 export {
   handleCreatePR,
+  handleEditPR,
   handleGetPRDetails,
   handleListMyPRs,
   handleCheckoutPRBranch,

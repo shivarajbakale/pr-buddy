@@ -4,16 +4,11 @@
  */
 
 export const TOOLS = {
-  READ_FILE: "read_file",
-  WRITE_FILE: "write_file",
-  LIST_DIRECTORY: "list_directory",
-
   CREATE_PR: "create_pr",
   GET_PR_DETAILS: "get_pr_details",
+  EDIT_PR: "edit_pr",
   LIST_MY_PRS: "list_my_prs",
   CHECKOUT_PR_BRANCH: "checkout_pr_branch",
-  ADD_PR_LABEL: "add_pr_label",
-  REMOVE_PR_LABEL: "remove_pr_label",
   ENABLE_PREVIEW_ENV: "enable_preview_env",
 
   GENERATE_REVIEW_PROMPT: "generate_review_prompt",
@@ -22,7 +17,4 @@ export const TOOLS = {
   GET_PR_DIFF_SUMMARY: "get_pr_diff_summary",
 
   GET_PR_STATS: "get_pr_stats",
-
-  // Create a day
-  CREATE_DAY: "create_day",
 } as const;
