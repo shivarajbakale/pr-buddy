@@ -45,6 +45,54 @@ This directory contains specialized Claude Code agents that provide expert assis
 I need to create an MCP server that exposes GitHub operations as tools
 ```
 
+---
+
+### atlassian-cli-expert
+
+**Name:** `atlassian-cli-expert`
+
+**Purpose:** Expert agent for Atlassian CLI (acli) operations including Jira work item management, project operations, user administration, authentication, and automation.
+
+**When to Use:**
+- Managing Jira work items (create, edit, search, transition, assign)
+- Administering Jira projects (create, update, archive, delete)
+- User management (activate, deactivate, delete users)
+- Bulk operations on Jira items
+- Automating Jira workflows
+- Integrating acli into scripts and CI/CD pipelines
+- Working with Jira filters and dashboards
+- JQL query construction and optimization
+- Troubleshooting acli commands
+
+**Expertise Includes:**
+- Complete acli command reference and usage
+- Authentication methods (OAuth, API tokens, admin auth)
+- Jira work item operations (CRUD, transitions, assignments)
+- Project management (lifecycle, configuration)
+- Bulk operations and automation patterns
+- JQL (Jira Query Language) expertise
+- Filter and dashboard management
+- Output parsing (JSON, CSV) and integration
+- Security best practices (token management, least privilege)
+- Performance optimization (pagination, parallel operations)
+- CI/CD integration patterns
+- Migration and data transformation
+- Error handling and resilience
+- Scripting and automation recipes
+
+**Example Usage:**
+
+```
+# Invoke the agent directly
+@atlassian-cli-expert How do I bulk assign all unassigned items in a project?
+
+# Or let Claude Code automatically route to it
+I need to create 50 Jira tasks from a CSV file using acli
+
+# Complex automation
+Show me how to automate transitioning all approved items to Done using acli
+```
+
 ## How to Use Agents
 
 ### Method 1: Explicit Invocation

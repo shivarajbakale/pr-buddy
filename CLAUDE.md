@@ -150,3 +150,34 @@ Current version: 1.0.1 (package.json) / 2.0.0 (server metadata in code)
 Phase 1 (Core GitHub Operations): COMPLETE
 Phase 2 (Review & Analysis): COMPLETE
 Phase 3+ (Advanced features, batch operations): See [PRD.md](PRD.md) for roadmap
+
+## General Guidelines for Claude Code
+
+### Documentation and File Creation
+- **NEVER** proactively create documentation files (*.md, README.md, etc.) unless explicitly requested by the user
+- Do NOT create summary documents, overview files, or reference guides without explicit user request
+- Only create files that are essential for the functionality being implemented (code files, configs, tests)
+- If you think documentation would be helpful, **ASK FIRST** before creating it
+- Exception: Update existing documentation when code changes require it
+
+### When Creating Files
+- Only create files that are directly needed for the task at hand
+- Prefer editing existing files over creating new ones
+- If creating a new file, ensure it's a core component (source code, test, configuration)
+- Avoid "helpful" supplementary files like guides, examples, or summaries unless requested
+
+### Examples
+✅ **DO create** (without asking):
+- Source code files (`.ts`, `.js`, `.py`, etc.)
+- Test files that accompany new features
+- Configuration files for new tools/services
+- Type definition files for new modules
+
+❌ **DON'TNNOT create** (without asking first):
+- README files
+- Documentation files (SUMMARY.md, GUIDE.md, etc.)
+- Example files (EXAMPLE.md, USAGE.md, etc.)
+- Reference documentation
+- Tutorial or getting started guides
+
+**When in doubt**: Focus on implementation, not documentation.
