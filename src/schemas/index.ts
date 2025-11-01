@@ -63,10 +63,7 @@ export const SCHEMAS = {
         .min(1, "PR title cannot be empty")
         .max(256, "PR title cannot exceed 256 characters")
         .describe(
-          `PR title, please ask the user to provide the JIRA ticket number if not provided. If the user does not provide the JIRA ticket number, please use the default value "NOTICKET".
-          The format for creating the title should be '[JIRA_TICKET-NUMBER]- PR Title'. For the PR title, please understand the changes in the PR after doing a diff with the base branch.
-          IF no ticket is specified then use the default to :  'NOTICKET - PR Title'.
-          `
+          "PR title. If already formatted as '[TICKET-###]- Title', it will be used as-is. Otherwise (including 'NOTICKET- Title'), the tool will prompt for JIRA ticket number and format automatically."
         ),
       body: z
         .string({ required_error: "PR body is required" })

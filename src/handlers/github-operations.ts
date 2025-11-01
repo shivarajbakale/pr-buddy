@@ -3,6 +3,7 @@
  * Author: Shivaraj Bakale
  */
 
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { ToolResponse } from "../types/index.js";
 import { GitHubCli } from "../utils/github-cli.js";
 
@@ -11,33 +12,139 @@ function createGitHubCli(repo: string): GitHubCli {
   return new GitHubCli(repo);
 }
 
-export async function handleCreatePR(args: {
-  title: string;
-  body: string;
-  base: string;
-  head: string;
-  labels: string[];
-  draft: boolean;
-  repo?: string;
-}): Promise<ToolResponse> {
+export async function handleCreatePR(
+  args: {
+    title: string;
+    body: string;
+    base: string;
+    head: string;
+    labels: string[];
+    draft: boolean;
+    repo?: string;
+  },
+  server?: McpServer
+): Promise<ToolResponse> {
   try {
+    let formattedTitle = args.title;
+
+    // Check if title already has JIRA ticket format
+    const hasJiraPrefix = /^\[([A-Z]+-\d+)\]-\s/.test(args.title);
+
+    // Only elicit if:
+    // 1. Server instance is provided (supports elicitation)
+    // 2. Title doesn't already have JIRA prefix
+    // Note: We still elicit even if title has NOTICKET prefix, to give user a chance to add ticket
+    if (server && !hasJiraPrefix) {
+      // Remove NOTICKET prefix if present, so we can re-add it based on user response
+      const titleWithoutNoTicket = args.title.replace(/^NOTICKET-\s*/, "");
+      const result = await server.server.elicitInput({
+        message:
+          "What JIRA ticket is this PR for? (e.g., PUX-3114, INCIDENT-1234)",
+        requestedSchema: {
+          type: "object",
+          properties: {
+            hasTicket: {
+              type: "boolean",
+              title: "Is there a JIRA ticket for this PR?",
+              description: 'Select "No" if there is no associated JIRA ticket',
+              default: false,
+            },
+            ticketNumber: {
+              type: "string",
+              title: "JIRA Ticket Number",
+              description:
+                "Enter the ticket number (e.g., PUX-3114, INCIDENT-1234)",
+              pattern: "^[A-Z]+-\\d+$",
+            },
+          },
+          required: ["hasTicket"],
+        },
+      });
+
+      // Handle user response
+      if (result.action === "cancel") {
+        return {
+          content: [
+            { type: "text", text: "❌ PR creation cancelled by user" },
+          ],
+          isError: true,
+        };
+      }
+
+      // Format title based on response
+      // Use titleWithoutNoTicket to avoid double-prefixing if user provided "NOTICKET- Title"
+      if (
+        result.action === "accept" &&
+        result.content?.["hasTicket"] &&
+        result.content?.["ticketNumber"]
+      ) {
+        formattedTitle = `[${result.content["ticketNumber"]}]- ${titleWithoutNoTicket}`;
+      } else {
+        formattedTitle = `NOTICKET- ${titleWithoutNoTicket}`;
+      }
+
+      // Second elicitation: Ask about preview environment
+      const previewResult = await server.server.elicitInput({
+        message: "Do you want to enable a preview environment for this PR?",
+        requestedSchema: {
+          type: "object",
+          properties: {
+            enablePreview: {
+              type: "boolean",
+              title: "Enable Preview Environment",
+              description:
+                "Enable preview environment to test changes before merging",
+              default: false,
+            },
+          },
+          required: ["enablePreview"],
+        },
+      });
+
+      // Handle preview environment response
+      if (previewResult.action === "cancel") {
+        return {
+          content: [
+            { type: "text", text: "❌ PR creation cancelled by user" },
+          ],
+          isError: true,
+        };
+      }
+
+      // Add preview environment label if user accepted
+      if (
+        previewResult.action === "accept" &&
+        previewResult.content?.["enablePreview"]
+      ) {
+        // Add the Need_preview_env label if not already in labels array
+        if (!args.labels.includes("Need_preview_env")) {
+          args.labels.push("Need_preview_env");
+        }
+      }
+    }
+    // If title already has JIRA prefix, use it as-is (formattedTitle = args.title)
+
     const githubCli = createGitHubCli(args.repo || "");
     const pr = await githubCli.createPR({
-      title: args.title,
+      title: formattedTitle,
       body: args.body,
       base: args.base,
       head: args.head,
       labels: args.labels,
     });
+    // Build success message
+    let successMessage = `✅ Successfully created PR #${pr.number}: ${pr.title}\n🔗 URL: ${pr.url}\n📝 Status: ${pr.isDraft ? "Draft" : "Ready for Review"}`;
+
+    // Add preview environment info if enabled
+    if (pr.labels.includes("Need_preview_env")) {
+      successMessage += "\n🚀 Preview environment: Enabled";
+    }
+
     return {
       content: [
         {
           type: "text",
-          text: `✅ Successfully created PR #${pr.number}: ${
-            pr.title
-          }\n🔗 URL: ${pr.url}\n📝 Status: ${
-            pr.isDraft ? "Draft" : "Ready for Review"
-          }`,
+          text: successMessage,
         },
       ],
     };
