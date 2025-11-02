@@ -11,11 +11,6 @@ export const TOOLS = {
   CHECKOUT_PR_BRANCH: "checkout_pr_branch",
   ENABLE_PREVIEW_ENV: "enable_preview_env",
   GET_PR_COMMENTS: "get_pr_comments",
-
-  GENERATE_REVIEW_PROMPT: "generate_review_prompt",
-  GENERATE_CODE_CHECKLIST: "generate_code_checklist",
-  ANALYZE_PR_COMPLEXITY: "analyze_pr_complexity",
   GET_PR_DIFF_SUMMARY: "get_pr_diff_summary",
-
   GET_PR_STATS: "get_pr_stats",
 } as const;

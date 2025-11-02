@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-pr-buddy is a Model Context Protocol (MCP) Server that integrates with GitHub CLI (`gh`) to provide AI assistants with powerful PR management, review, and analysis capabilities. The server exposes tools for creating PRs, analyzing complexity, generating review prompts, and gathering PR statistics.
+pr-buddy is a Model Context Protocol (MCP) Server that integrates with GitHub CLI (`gh`) to provide AI assistants with powerful PR management capabilities. The server exposes tools for creating PRs, managing PR details, retrieving PR comments, and gathering PR statistics.
 
 ## Essential Commands
 
@@ -51,13 +51,13 @@ git config --get remote.origin.url
 - Returns typed responses via JSON parsing of `gh` output
 
 **Tool Handlers** ([src/handlers/](src/handlers/))
-- `github-operations.ts` - PR CRUD operations (create, get, list, checkout, enable preview)
-- `review-analysis.ts` - Review prompts, checklists, complexity analysis, diff summaries
+- `github-operations.ts` - PR CRUD operations (create, get, edit, list, checkout, enable preview, diff summary)
+- `pr-comments.ts` - PR comment retrieval and grouping
 - `pr-statistics.ts` - Time-based PR metrics (day/week/month)
 
 **Type System** ([src/types/index.ts](src/types/index.ts))
 - `GitHubPR` - Core PR data structure
-- `PRComplexityAnalysis` - Complexity scoring with recommendations
+- `PRComment` - PR comment data with type differentiation (general/review/inline)
 - `PRStats` - Time-period statistics with repository breakdown
 - `ToolResponse` - Standard MCP tool response format
 
@@ -88,15 +88,6 @@ git config --get remote.origin.url
 
 ### Repository Parameter Handling
 All tools expect `repo` parameter in format from `git config --get remote.origin.url`. The server documentation instructs AI to run this command to obtain the value. The `GitHubCli` class then appends `--repo` flag to all `gh` commands.
-
-### Complexity Analysis Algorithm
-[src/utils/pr-analysis.ts](src/utils/pr-analysis.ts) calculates complexity score (0-100) based on:
-- Files changed (weight: 20%)
-- Lines changed (weight: 40%)
-- Addition/deletion ratio (weight: 20%)
-- Changed files distribution (weight: 20%)
-
-Thresholds: 0-30 (simple), 31-60 (moderate), 61-80 (complex), 81-100 (very-complex)
 
 ### Preview Environment Workflow
 The `enable_preview_env` tool adds the `Need_preview_env` label to a PR, which triggers preview environment creation in the CI/CD pipeline. This is a project-specific convention referenced in schemas.
@@ -148,7 +139,7 @@ When adding new tools:
 Current version: 1.0.1 (package.json) / 2.0.0 (server metadata in code)
 
 Phase 1 (Core GitHub Operations): COMPLETE
-Phase 2 (Review & Analysis): COMPLETE
+Phase 2 (PR Comments & Statistics): COMPLETE
 Phase 3+ (Advanced features, batch operations): See [PRD.md](PRD.md) for roadmap
 
 ## General Guidelines for Claude Code

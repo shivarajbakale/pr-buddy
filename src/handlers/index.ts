@@ -11,15 +11,8 @@ export {
   handleListMyPRs,
   handleCheckoutPRBranch,
   handleEnablePreviewEnv,
-} from "./github-operations.js";
-
-// Review & Analysis
-export {
-  handleGenerateReviewPrompt,
-  handleGenerateCodeChecklist,
-  handleAnalyzePRComplexity,
   handleGetPRDiffSummary,
-} from "./review-analysis.js";
+} from "./github-operations.js";
 
 // PR Statistics
 export { handleGetPRStats } from "./pr-statistics.js";

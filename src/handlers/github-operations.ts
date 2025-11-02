@@ -504,3 +504,40 @@ export async function handleEnablePreviewEnv(args: {
     };
   }
 }
+
+export async function handleGetPRDiffSummary(args: {
+  prNumber: number;
+  includeFileStats?: boolean;
+  maxFiles?: number;
+  repo?: string;
+}): Promise<ToolResponse> {
+  try {
+    const githubCli = createGitHubCli(args.repo || "");
+    const summary = await githubCli.getPRDiffSummary(
+      args.prNumber,
+      args.includeFileStats || true,
+      args.maxFiles || 20
+    );
+
+    return {
+      content: [
+        {
+          type: "text",
+          text: summary,
+        },
+      ],
+    };
+  } catch (error) {
+    return {
+      content: [
+        {
+          type: "text",
+          text: `Error getting PR diff summary: ${
+            error instanceof Error ? error.message : String(error)
+          }`,
+        },
+      ],
+      isError: true,
+    };
+  }
+}

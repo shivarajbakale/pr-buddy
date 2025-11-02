@@ -42,38 +42,6 @@ export interface PRTemplate {
   assignees?: string[];
 }
 
-export interface PRComplexityAnalysis {
-  score: number;
-  level: 'simple' | 'moderate' | 'complex' | 'very-complex';
-  factors: {
-    fileCount: number;
-    linesChanged: number;
-    additionDeletionRatio: number;
-    filesChanged: number;
-    linesAdded: number;
-    linesDeleted: number;
-    complexity: string;
-  };
-  risks: string[];
-  recommendations: string[];
-  estimatedReviewTime: string;
-  recommendedReviewTime: string;
-  suggestions: string[];
-}
-
-export interface ReviewPrompt {
-  type: string;
-  title: string;
-  prompt: string;
-  sections: Array<{
-    heading: string;
-    questions: string[];
-    focusAreas: string[];
-  }>;
-  checklistItems: string[];
-  timeEstimate: string;
-}
-
 export interface PRStats {
   period: 'day' | 'week' | 'month';
   totalMerged: number;

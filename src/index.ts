@@ -19,9 +19,6 @@ import {
   handleCheckoutPRBranch,
   handleEnablePreviewEnv,
   handleGetPRComments,
-  handleGenerateReviewPrompt,
-  handleGenerateCodeChecklist,
-  handleAnalyzePRComplexity,
   handleGetPRDiffSummary,
   handleGetPRStats,
 } from "./handlers/index.js";
@@ -196,67 +193,6 @@ class PRBuddyServer {
       },
       async (args) => {
         const response = await handleGetPRComments(args as any);
-        return this.convertToolResponse(response);
-      }
-    );
-
-    // Review & Analysis Tools
-
-    // GENERATE_REVIEW_PROMPT
-    this.server.registerTool(
-      TOOLS.GENERATE_REVIEW_PROMPT,
-      {
-        title: SCHEMAS.GENERATE_REVIEW_PROMPT.title,
-        description: SCHEMAS.GENERATE_REVIEW_PROMPT.description,
-        inputSchema: {
-          prNumber: SCHEMAS.GENERATE_REVIEW_PROMPT.inputSchema.prNumber,
-          reviewType: SCHEMAS.GENERATE_REVIEW_PROMPT.inputSchema.reviewType,
-          repo: SCHEMAS.GENERATE_REVIEW_PROMPT.inputSchema.repositoryUrl,
-        },
-      },
-      async (args) => {
-        const response = await handleGenerateReviewPrompt(args as any);
-        return this.convertToolResponse(response);
-      }
-    );
-
-    // GENERATE_CODE_CHECKLIST
-    this.server.registerTool(
-      TOOLS.GENERATE_CODE_CHECKLIST,
-      {
-        title: SCHEMAS.GENERATE_CODE_CHECKLIST.title,
-        description: SCHEMAS.GENERATE_CODE_CHECKLIST.description,
-        inputSchema: {
-          prNumber: SCHEMAS.GENERATE_CODE_CHECKLIST.inputSchema.prNumber,
-          includeSecurityChecks:
-            SCHEMAS.GENERATE_CODE_CHECKLIST.inputSchema.includeSecurityChecks,
-          includePerformanceChecks:
-            SCHEMAS.GENERATE_CODE_CHECKLIST.inputSchema
-              .includePerformanceChecks,
-          repo: SCHEMAS.GENERATE_CODE_CHECKLIST.inputSchema.repositoryUrl,
-        },
-      },
-      async (args) => {
-        const response = await handleGenerateCodeChecklist(args as any);
-        return this.convertToolResponse(response);
-      }
-    );
-
-    // ANALYZE_PR_COMPLEXITY
-    this.server.registerTool(
-      TOOLS.ANALYZE_PR_COMPLEXITY,
-      {
-        title: SCHEMAS.ANALYZE_PR_COMPLEXITY.title,
-        description: SCHEMAS.ANALYZE_PR_COMPLEXITY.description,
-        inputSchema: {
-          prNumber: SCHEMAS.ANALYZE_PR_COMPLEXITY.inputSchema.prNumber,
-          includeRecommendations:
-            SCHEMAS.ANALYZE_PR_COMPLEXITY.inputSchema.includeRecommendations,
-          repo: SCHEMAS.ANALYZE_PR_COMPLEXITY.inputSchema.repositoryUrl,
-        },
-      },
-      async (args) => {
-        const response = await handleAnalyzePRComplexity(args as any);
         return this.convertToolResponse(response);
       }
     );
