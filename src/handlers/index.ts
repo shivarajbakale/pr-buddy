@@ -19,3 +19,12 @@ export { handleGetPRStats } from "./pr-statistics.js";
 
 // PR Comments
 export { handleGetPRComments } from "./pr-comments.js";
+
+// JIRA Operations
+export {
+  handleGetJiraSprints,
+  handleGetJiraSprintDetails,
+  handleGetJiraBoards,
+  handleGetMyJiraTickets,
+  handleCreateJiraTicket,
+} from "./jira-sprints.js";

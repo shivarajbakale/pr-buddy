@@ -423,4 +423,231 @@ export const SCHEMAS = {
       ...repositoryContextSchema,
     },
   },
+
+  // JIRA Tools
+  GET_JIRA_SPRINTS: {
+    title: "Get JIRA Sprints",
+    description:
+      "List JIRA sprints with filtering options. Requires ACLI to be installed and authenticated (run 'acli login').",
+    inputSchema: {
+      site: z
+        .string()
+        .url("Must be a valid URL")
+        .optional()
+        .describe(
+          "JIRA site URL (e.g., 'https://yourcompany.atlassian.net'). If not provided, uses default from ACLI config."
+        ),
+      boardId: z
+        .number()
+        .int("Board ID must be an integer")
+        .positive("Board ID must be positive")
+        .optional()
+        .describe(
+          "Filter sprints by board ID. Use get_jira_boards to find board IDs."
+        ),
+      state: z
+        .enum(["future", "active", "closed", "all"])
+        .optional()
+        .default("all")
+        .describe(
+          "Filter by sprint state: future (not started), active (in progress), closed (completed), or all (default: all)"
+        ),
+      maxResults: z
+        .number()
+        .int("Max results must be an integer")
+        .min(1, "Must return at least 1 result")
+        .max(100, "Cannot exceed 100 results")
+        .optional()
+        .default(50)
+        .describe("Maximum number of sprints to return (default: 50)"),
+      includeTickets: z
+        .boolean()
+        .optional()
+        .default(false)
+        .describe(
+          "Include detailed ticket information for each sprint (default: false). Note: This makes the request slower."
+        ),
+    },
+  },
+
+  GET_JIRA_SPRINT_DETAILS: {
+    title: "Get JIRA Sprint Details",
+    description:
+      "Get detailed information about a specific sprint including all tickets, progress stats, and burndown data.",
+    inputSchema: {
+      site: z
+        .string()
+        .url("Must be a valid URL")
+        .optional()
+        .describe(
+          "JIRA site URL (e.g., 'https://yourcompany.atlassian.net'). If not provided, uses default from ACLI config."
+        ),
+      sprintId: z
+        .number()
+        .int("Sprint ID must be an integer")
+        .positive("Sprint ID must be positive")
+        .describe("The sprint ID to get details for"),
+      groupBy: z
+        .enum(["status", "assignee", "type", "priority"])
+        .optional()
+        .default("status")
+        .describe(
+          "Group tickets by: status, assignee, type, or priority (default: status)"
+        ),
+      includeSubtasks: z
+        .boolean()
+        .optional()
+        .default(false)
+        .describe("Include subtasks in the ticket list (default: false)"),
+    },
+  },
+
+  GET_JIRA_BOARDS: {
+    title: "Get JIRA Boards",
+    description: "List JIRA boards for a project or site",
+    inputSchema: {
+      site: z
+        .string()
+        .url("Must be a valid URL")
+        .optional()
+        .describe(
+          "JIRA site URL (e.g., 'https://yourcompany.atlassian.net'). If not provided, uses default from ACLI config."
+        ),
+      projectKey: z
+        .string()
+        .min(1, "Project key cannot be empty")
+        .regex(
+          /^[A-Z][A-Z0-9]*$/,
+          "Project key must be uppercase alphanumeric (e.g., 'PUX', 'INCIDENT')"
+        )
+        .optional()
+        .describe("Filter boards by project key (e.g., 'PUX')"),
+      type: z
+        .enum(["scrum", "kanban"])
+        .optional()
+        .describe("Filter by board type: scrum or kanban"),
+      maxResults: z
+        .number()
+        .int("Max results must be an integer")
+        .min(1, "Must return at least 1 result")
+        .max(100, "Cannot exceed 100 results")
+        .optional()
+        .default(50)
+        .describe("Maximum number of boards to return (default: 50)"),
+    },
+  },
+
+  GET_MY_JIRA_TICKETS: {
+    title: "Get My JIRA Tickets",
+    description:
+      "Get all JIRA tickets assigned to you with filtering options. Uses JQL: 'assignee = currentUser()'",
+    inputSchema: {
+      site: z
+        .string()
+        .url("Must be a valid URL")
+        .optional()
+        .describe(
+          "JIRA site URL (e.g., 'https://yourcompany.atlassian.net'). If not provided, uses default from ACLI config."
+        ),
+      status: z
+        .string()
+        .min(1, "Status cannot be empty")
+        .optional()
+        .describe(
+          "Filter by ticket status (e.g., 'To Do', 'In Progress', 'Done', 'In Review'). Case-sensitive."
+        ),
+      sprint: z
+        .enum(["open", "closed", "all"])
+        .optional()
+        .describe(
+          "Filter by sprint: 'open' (active/future sprints), 'closed' (completed sprints), 'all' (no sprint filter)"
+        ),
+      maxResults: z
+        .number()
+        .int("Max results must be an integer")
+        .min(1, "Must return at least 1 result")
+        .max(100, "Cannot exceed 100 results")
+        .optional()
+        .default(50)
+        .describe("Maximum number of tickets to return (default: 50)"),
+      groupBy: z
+        .enum(["status", "priority", "type"])
+        .optional()
+        .default("status")
+        .describe(
+          "Group tickets in table by: status, priority, or type (default: status)"
+        ),
+    },
+  },
+
+  CREATE_JIRA_TICKET: {
+    title: "Create JIRA Ticket",
+    description:
+      "Create a new JIRA ticket (work item) with summary, description, assignee, and labels. Supports creating bugs, tasks, stories, and subtasks.",
+    inputSchema: {
+      site: z
+        .string()
+        .url("Must be a valid URL")
+        .optional()
+        .describe(
+          "JIRA site URL (e.g., 'https://yourcompany.atlassian.net'). If not provided, uses default from ACLI config."
+        ),
+      project: z
+        .string()
+        .min(1, "Project key cannot be empty")
+        .max(10, "Project key cannot exceed 10 characters")
+        .regex(
+          /^[A-Z][A-Z0-9]*$/,
+          "Project key must be uppercase alphanumeric (e.g., 'PUX', 'INCIDENT', 'TEAM')"
+        )
+        .describe("REQUIRED: Project key where ticket will be created (e.g., 'PUX', 'INCIDENT')"),
+      type: z
+        .enum(["Task", "Bug", "Story", "Epic", "Subtask"])
+        .describe(
+          "REQUIRED: Ticket type. Common types: Task (general work), Bug (defect), Story (user story), Epic (large initiative), Subtask (child task)"
+        ),
+      summary: z
+        .string()
+        .min(1, "Summary cannot be empty")
+        .max(255, "Summary cannot exceed 255 characters")
+        .describe(
+          "REQUIRED: Brief title/summary of the ticket (e.g., 'Fix login bug', 'Implement dark mode')"
+        ),
+      description: z
+        .string()
+        .max(32000, "Description cannot exceed 32000 characters")
+        .optional()
+        .describe(
+          "Detailed description of the ticket. Supports plain text or Atlassian Document Format (ADF). Include acceptance criteria, steps to reproduce, etc."
+        ),
+      assignee: z
+        .string()
+        .optional()
+        .describe(
+          "Assign ticket to user by email (e.g., 'user@company.com'), account ID, or '@me' for self-assignment. Defaults to '@me' if not specified."
+        ),
+      labels: z
+        .array(z.string().min(1, "Label cannot be empty"))
+        .optional()
+        .describe(
+          "Array of labels to add to the ticket (e.g., ['bug', 'urgent', 'backend']). Labels help categorize and filter tickets."
+        ),
+      priority: z
+        .enum(["Highest", "High", "Medium", "Low", "Lowest"])
+        .optional()
+        .describe(
+          "Ticket priority level. Defaults to 'Medium' if not specified."
+        ),
+      parent: z
+        .string()
+        .regex(
+          /^[A-Z]+-\d+$/,
+          "Parent must be a valid ticket key (e.g., 'PUX-123')"
+        )
+        .optional()
+        .describe(
+          "Parent ticket key for creating subtasks (e.g., 'PUX-123'). Only use when creating a Subtask type."
+        ),
+    },
+  },
 } as const;

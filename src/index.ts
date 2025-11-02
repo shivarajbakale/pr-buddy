@@ -21,6 +21,11 @@ import {
   handleGetPRComments,
   handleGetPRDiffSummary,
   handleGetPRStats,
+  handleGetJiraSprints,
+  handleGetJiraSprintDetails,
+  handleGetJiraBoards,
+  handleGetMyJiraTickets,
+  handleCreateJiraTicket,
 } from "./handlers/index.js";
 
 class PRBuddyServer {
@@ -232,6 +237,110 @@ class PRBuddyServer {
       },
       async (args) => {
         const response = await handleGetPRStats(args as any);
+        return this.convertToolResponse(response);
+      }
+    );
+
+    // JIRA Tools
+
+    // GET_JIRA_SPRINTS
+    this.server.registerTool(
+      TOOLS.GET_JIRA_SPRINTS,
+      {
+        title: SCHEMAS.GET_JIRA_SPRINTS.title,
+        description: SCHEMAS.GET_JIRA_SPRINTS.description,
+        inputSchema: {
+          site: SCHEMAS.GET_JIRA_SPRINTS.inputSchema.site,
+          boardId: SCHEMAS.GET_JIRA_SPRINTS.inputSchema.boardId,
+          state: SCHEMAS.GET_JIRA_SPRINTS.inputSchema.state,
+          maxResults: SCHEMAS.GET_JIRA_SPRINTS.inputSchema.maxResults,
+          includeTickets: SCHEMAS.GET_JIRA_SPRINTS.inputSchema.includeTickets,
+        },
+      },
+      async (args) => {
+        const response = await handleGetJiraSprints(args as any);
+        return this.convertToolResponse(response);
+      }
+    );
+
+    // GET_JIRA_SPRINT_DETAILS
+    this.server.registerTool(
+      TOOLS.GET_JIRA_SPRINT_DETAILS,
+      {
+        title: SCHEMAS.GET_JIRA_SPRINT_DETAILS.title,
+        description: SCHEMAS.GET_JIRA_SPRINT_DETAILS.description,
+        inputSchema: {
+          site: SCHEMAS.GET_JIRA_SPRINT_DETAILS.inputSchema.site,
+          sprintId: SCHEMAS.GET_JIRA_SPRINT_DETAILS.inputSchema.sprintId,
+          groupBy: SCHEMAS.GET_JIRA_SPRINT_DETAILS.inputSchema.groupBy,
+          includeSubtasks: SCHEMAS.GET_JIRA_SPRINT_DETAILS.inputSchema.includeSubtasks,
+        },
+      },
+      async (args) => {
+        const response = await handleGetJiraSprintDetails(args as any);
+        return this.convertToolResponse(response);
+      }
+    );
+
+    // GET_JIRA_BOARDS
+    this.server.registerTool(
+      TOOLS.GET_JIRA_BOARDS,
+      {
+        title: SCHEMAS.GET_JIRA_BOARDS.title,
+        description: SCHEMAS.GET_JIRA_BOARDS.description,
+        inputSchema: {
+          site: SCHEMAS.GET_JIRA_BOARDS.inputSchema.site,
+          projectKey: SCHEMAS.GET_JIRA_BOARDS.inputSchema.projectKey,
+          type: SCHEMAS.GET_JIRA_BOARDS.inputSchema.type,
+          maxResults: SCHEMAS.GET_JIRA_BOARDS.inputSchema.maxResults,
+        },
+      },
+      async (args) => {
+        const response = await handleGetJiraBoards(args as any);
+        return this.convertToolResponse(response);
+      }
+    );
+
+    // GET_MY_JIRA_TICKETS
+    this.server.registerTool(
+      TOOLS.GET_MY_JIRA_TICKETS,
+      {
+        title: SCHEMAS.GET_MY_JIRA_TICKETS.title,
+        description: SCHEMAS.GET_MY_JIRA_TICKETS.description,
+        inputSchema: {
+          site: SCHEMAS.GET_MY_JIRA_TICKETS.inputSchema.site,
+          status: SCHEMAS.GET_MY_JIRA_TICKETS.inputSchema.status,
+          sprint: SCHEMAS.GET_MY_JIRA_TICKETS.inputSchema.sprint,
+          maxResults: SCHEMAS.GET_MY_JIRA_TICKETS.inputSchema.maxResults,
+          groupBy: SCHEMAS.GET_MY_JIRA_TICKETS.inputSchema.groupBy,
+        },
+      },
+      async (args) => {
+        const response = await handleGetMyJiraTickets(args as any);
+        return this.convertToolResponse(response);
+      }
+    );
+
+    // CREATE_JIRA_TICKET
+    this.server.registerTool(
+      TOOLS.CREATE_JIRA_TICKET,
+      {
+        title: SCHEMAS.CREATE_JIRA_TICKET.title,
+        description: SCHEMAS.CREATE_JIRA_TICKET.description,
+        inputSchema: {
+          site: SCHEMAS.CREATE_JIRA_TICKET.inputSchema.site,
+          project: SCHEMAS.CREATE_JIRA_TICKET.inputSchema.project,
+          type: SCHEMAS.CREATE_JIRA_TICKET.inputSchema.type,
+          summary: SCHEMAS.CREATE_JIRA_TICKET.inputSchema.summary,
+          description: SCHEMAS.CREATE_JIRA_TICKET.inputSchema.description,
+          assignee: SCHEMAS.CREATE_JIRA_TICKET.inputSchema.assignee,
+          labels: SCHEMAS.CREATE_JIRA_TICKET.inputSchema.labels,
+          priority: SCHEMAS.CREATE_JIRA_TICKET.inputSchema.priority,
+          parent: SCHEMAS.CREATE_JIRA_TICKET.inputSchema.parent,
+        },
+      },
+      async (args) => {
+        const response = await handleCreateJiraTicket(args as any);
         return this.convertToolResponse(response);
       }
     );
