@@ -32,8 +32,12 @@ export class GitHubCli {
    */
   private async executeGhCommand(command: string): Promise<string> {
     try {
-      // Add repository context to command if available
-      let fullCommand = `gh ${command} --repo ${this.repo}`;
+      // Don't add --repo flag for 'gh api' commands as they don't support it
+      // For gh api, we use the repo context via the API endpoint or GraphQL variables
+      const isApiCommand = command.trim().startsWith('api ');
+      let fullCommand = isApiCommand
+        ? `gh ${command}`
+        : `gh ${command} --repo ${this.repo}`;
 
       const { stdout, stderr } = await execAsync(fullCommand);
 

@@ -129,86 +129,83 @@ function groupComments(
 }
 
 function formatCommentsOutput(response: PRCommentsResponse): string {
-  let output = `📝 Comments on PR #${response.prNumber}\n\n`;
+  let output = `# 📝 Comments on PR #${response.prNumber}\n\n`;
 
   // Summary
-  output += `📊 Summary:\n`;
-  output += `  Total: ${response.totalComments} comments\n`;
-  output += `  💬 General: ${response.breakdown.general}\n`;
-  output += `  ⭐ Reviews: ${response.breakdown.reviews}\n`;
-  output += `  💻 Inline: ${response.breakdown.inline}\n`;
+  output += `## 📊 Summary\n\n`;
+  output += `- **Total Comments:** ${response.totalComments}\n`;
+  output += `- **💬 General:** ${response.breakdown.general}\n`;
+  output += `- **⭐ Reviews:** ${response.breakdown.reviews}\n`;
+  output += `- **💻 Inline:** ${response.breakdown.inline}\n`;
 
   if (response.breakdown.resolved > 0 || response.breakdown.unresolved > 0) {
-    output += `  ✅ Resolved: ${response.breakdown.resolved}\n`;
-    output += `  🔴 Unresolved: ${response.breakdown.unresolved}\n`;
+    output += `- **✅ Resolved:** ${response.breakdown.resolved}\n`;
+    output += `- **🔴 Unresolved:** ${response.breakdown.unresolved}\n`;
   }
 
-  output += `\n👥 Authors: ${response.authors.join(", ")}\n`;
+  output += `\n**👥 Authors:** ${response.authors.join(", ")}\n\n`;
 
   if (response.files.length > 0) {
-    output += `\n📁 Files with comments: ${response.files.length}\n`;
-    response.files.slice(0, 10).forEach((file) => {
-      output += `  • ${file}\n`;
-    });
-    if (response.files.length > 10) {
-      output += `  ... and ${response.files.length - 10} more\n`;
-    }
+    output += `**📁 Files with comments:** ${response.files.length}\n\n`;
   }
 
-  output += `\n${"=".repeat(60)}\n\n`;
-
-  // Comments
-  response.comments.forEach((comment, index) => {
-    output += formatSingleComment(comment, index + 1);
-    output += `\n${"-".repeat(60)}\n\n`;
-  });
+  // Comments Table
+  output += `## 💬 Comments\n\n`;
+  output += formatCommentsTable(response.comments);
 
   return output;
 }
 
-function formatSingleComment(comment: PRComment, index: number): string {
-  let output = `[${index}] `;
-
-  // Type icon
-  const icons = { general: "💬", review: "⭐", inline: "💻" };
-  output += `${icons[comment.type]} `;
-
-  // Author and timestamp
-  output += `@${comment.author.login} `;
-  output += `(${new Date(comment.createdAt).toLocaleString()})\n`;
-
-  // Review state
-  if (comment.reviewState) {
-    const stateEmoji = {
-      APPROVED: "✅",
-      CHANGES_REQUESTED: "❌",
-      COMMENTED: "💭",
-      DISMISSED: "🚫",
-    };
-    output += `${stateEmoji[comment.reviewState]} ${comment.reviewState}\n`;
+function formatCommentsTable(comments: PRComment[]): string {
+  if (comments.length === 0) {
+    return "_No comments found._\n";
   }
 
-  // File and line info
-  if (comment.path) {
-    output += `📄 ${comment.path}`;
-    if (comment.line) {
-      output += `:${comment.line}`;
+  // Table header
+  let table = "| Type | Author | Date | File/Location | Status | Comment | Link |\n";
+  table += "|------|--------|------|---------------|--------|---------|------|\n";
+
+  // Table rows
+  comments.forEach((comment) => {
+    const typeIcon = { general: "💬", review: "⭐", inline: "💻" }[comment.type];
+    const author = `@${comment.author.login}`;
+    const date = new Date(comment.createdAt).toLocaleDateString();
+
+    // File and location
+    let location = "-";
+    if (comment.path) {
+      location = comment.path;
+      if (comment.line) {
+        location += `:${comment.line}`;
+      }
     }
-    output += `\n`;
-  }
 
-  // Resolution status
-  if (comment.isResolved !== undefined) {
-    output += comment.isResolved ? "✅ Resolved\n" : "🔴 Unresolved\n";
-  }
+    // Status (review state or resolution)
+    let status = "-";
+    if (comment.reviewState) {
+      const stateEmoji = {
+        APPROVED: "✅",
+        CHANGES_REQUESTED: "❌",
+        COMMENTED: "💭",
+        DISMISSED: "🚫",
+      };
+      status = `${stateEmoji[comment.reviewState]} ${comment.reviewState}`;
+    } else if (comment.isResolved !== undefined) {
+      status = comment.isResolved ? "✅ Resolved" : "🔴 Unresolved";
+    }
 
-  // Comment body
-  output += `\n${comment.body}\n`;
+    // Truncate comment body for table (first 100 chars)
+    const bodyPreview = comment.body.length > 100
+      ? comment.body.substring(0, 100).replace(/\n/g, " ") + "..."
+      : comment.body.replace(/\n/g, " ");
 
-  // URL
-  if (comment.url) {
-    output += `\n🔗 ${comment.url}\n`;
-  }
+    // Escape pipe characters in content to prevent breaking the table
+    const escapePipes = (text: string) => text.replace(/\|/g, "\\|");
 
-  return output;
+    const link = comment.url ? `[View](${comment.url})` : "-";
+
+    table += `| ${typeIcon} | ${escapePipes(author)} | ${date} | ${escapePipes(location)} | ${escapePipes(status)} | ${escapePipes(bodyPreview)} | ${link} |\n`;
+  });
+
+  return table;
 }
