@@ -18,6 +18,7 @@ import {
   handleListMyPRs,
   handleCheckoutPRBranch,
   handleEnablePreviewEnv,
+  handleGetPRComments,
   handleGenerateReviewPrompt,
   handleGenerateCodeChecklist,
   handleAnalyzePRComplexity,
@@ -168,6 +169,33 @@ class PRBuddyServer {
       },
       async (args) => {
         const response = await handleEnablePreviewEnv(args as any);
+        return this.convertToolResponse(response);
+      }
+    );
+
+    // GET_PR_COMMENTS
+    this.server.registerTool(
+      TOOLS.GET_PR_COMMENTS,
+      {
+        title: SCHEMAS.GET_PR_COMMENTS.title,
+        description: SCHEMAS.GET_PR_COMMENTS.description,
+        inputSchema: {
+          prNumber: SCHEMAS.GET_PR_COMMENTS.inputSchema.prNumber,
+          includeGeneralComments:
+            SCHEMAS.GET_PR_COMMENTS.inputSchema.includeGeneralComments,
+          includeReviewComments:
+            SCHEMAS.GET_PR_COMMENTS.inputSchema.includeReviewComments,
+          includeInlineComments:
+            SCHEMAS.GET_PR_COMMENTS.inputSchema.includeInlineComments,
+          includeResolved: SCHEMAS.GET_PR_COMMENTS.inputSchema.includeResolved,
+          filterByAuthor: SCHEMAS.GET_PR_COMMENTS.inputSchema.filterByAuthor,
+          groupBy: SCHEMAS.GET_PR_COMMENTS.inputSchema.groupBy,
+          maxComments: SCHEMAS.GET_PR_COMMENTS.inputSchema.maxComments,
+          repo: SCHEMAS.GET_PR_COMMENTS.inputSchema.repositoryUrl,
+        },
+      },
+      async (args) => {
+        const response = await handleGetPRComments(args as any);
         return this.convertToolResponse(response);
       }
     );

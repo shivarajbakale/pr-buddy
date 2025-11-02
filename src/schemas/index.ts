@@ -134,7 +134,8 @@ export const SCHEMAS = {
 
   EDIT_PR: {
     title: "Edit Pull Request",
-    description: "Edit an existing pull request - update title, body, base branch, or state",
+    description:
+      "Edit an existing pull request - update title, body, base branch, or state",
     inputSchema: {
       number: z
         .number()
@@ -243,9 +244,14 @@ export const SCHEMAS = {
         .refine(
           (date) => {
             const parsed = new Date(date);
-            return !isNaN(parsed.getTime()) && parsed.toISOString().startsWith(date);
+            return (
+              !isNaN(parsed.getTime()) && parsed.toISOString().startsWith(date)
+            );
           },
-          { message: "Invalid date. Must be a valid calendar date (e.g., 2025-01-15)" }
+          {
+            message:
+              "Invalid date. Must be a valid calendar date (e.g., 2025-01-15)",
+          }
         )
         .optional()
         .describe(
@@ -260,9 +266,14 @@ export const SCHEMAS = {
         .refine(
           (date) => {
             const parsed = new Date(date);
-            return !isNaN(parsed.getTime()) && parsed.toISOString().startsWith(date);
+            return (
+              !isNaN(parsed.getTime()) && parsed.toISOString().startsWith(date)
+            );
           },
-          { message: "Invalid date. Must be a valid calendar date (e.g., 2025-01-31)" }
+          {
+            message:
+              "Invalid date. Must be a valid calendar date (e.g., 2025-01-31)",
+          }
         )
         .optional()
         .describe(
@@ -310,6 +321,60 @@ export const SCHEMAS = {
     },
   },
 
+  GET_PR_COMMENTS: {
+    title: "Get PR Comments",
+    description:
+      "Retrieve all comments from a pull request with filtering and grouping options",
+    inputSchema: {
+      prNumber: z
+        .number()
+        .int("PR number must be a whole number")
+        .positive("PR number must be positive")
+        .describe("PR number"),
+      includeGeneralComments: z
+        .boolean()
+        .optional()
+        .default(true)
+        .describe("Include general PR comments (default: true)"),
+      includeReviewComments: z
+        .boolean()
+        .optional()
+        .default(true)
+        .describe("Include review comments (default: true)"),
+      includeInlineComments: z
+        .boolean()
+        .optional()
+        .default(true)
+        .describe("Include inline code comments (default: true)"),
+      includeResolved: z
+        .boolean()
+        .optional()
+        .default(true)
+        .describe("Include resolved comments (default: true)"),
+      filterByAuthor: z
+        .string()
+        .min(1, "Author username cannot be empty")
+        .optional()
+        .describe("Filter comments by author username (optional)"),
+      groupBy: z
+        .enum(["type", "author", "file", "chronological"])
+        .optional()
+        .default("chronological")
+        .describe(
+          "Group comments by type, author, file, or chronological order (default: chronological)"
+        ),
+      maxComments: z
+        .number()
+        .int("Max comments must be a whole number")
+        .min(1, "Max comments must be at least 1")
+        .max(500, "Max comments cannot exceed 500")
+        .optional()
+        .default(100)
+        .describe("Maximum number of comments to return (default: 100)"),
+      ...repositoryContextSchema,
+    },
+  },
+
   GENERATE_REVIEW_PROMPT: {
     title: "Generate Review Prompt",
     description: "Create a staff engineer-level review prompt for a PR",
@@ -351,7 +416,9 @@ export const SCHEMAS = {
         .boolean()
         .optional()
         .default(true)
-        .describe("Include performance-focused checklist items (default: true)"),
+        .describe(
+          "Include performance-focused checklist items (default: true)"
+        ),
       ...repositoryContextSchema,
     },
   },
@@ -376,7 +443,8 @@ export const SCHEMAS = {
 
   GET_PR_DIFF_SUMMARY: {
     title: "Get PR Diff Summary",
-    description: "Get a detailed summary of changes in a pull request with file statistics",
+    description:
+      "Get a detailed summary of changes in a pull request with file statistics",
     inputSchema: {
       prNumber: z
         .number()
@@ -395,7 +463,9 @@ export const SCHEMAS = {
         .max(100, "Max files cannot exceed 100")
         .optional()
         .default(20)
-        .describe("Maximum number of files to include in the summary (default: 20)"),
+        .describe(
+          "Maximum number of files to include in the summary (default: 20)"
+        ),
       ...repositoryContextSchema,
     },
   },

@@ -10,6 +10,7 @@ export const TOOLS = {
   LIST_MY_PRS: "list_my_prs",
   CHECKOUT_PR_BRANCH: "checkout_pr_branch",
   ENABLE_PREVIEW_ENV: "enable_preview_env",
+  GET_PR_COMMENTS: "get_pr_comments",
 
   GENERATE_REVIEW_PROMPT: "generate_review_prompt",
   GENERATE_CODE_CHECKLIST: "generate_code_checklist",

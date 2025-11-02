@@ -131,4 +131,45 @@ export interface LabelOperation {
 export interface BranchCheckout {
   prNumber: number;
   createLocal?: boolean;
+}
+
+// PR Comments Types
+export interface PRComment {
+  id: string;
+  type: "general" | "review" | "inline";
+  author: {
+    login: string;
+    avatarUrl?: string;
+  };
+  body: string;
+  createdAt: string;
+  updatedAt?: string;
+  url?: string;
+
+  // Review-specific
+  reviewState?: "APPROVED" | "CHANGES_REQUESTED" | "COMMENTED" | "DISMISSED";
+
+  // Inline comment-specific
+  path?: string;
+  line?: number;
+  startLine?: number;
+  position?: number;
+  diffHunk?: string;
+  isResolved?: boolean;
+  threadId?: string;
+}
+
+export interface PRCommentsResponse {
+  prNumber: number;
+  totalComments: number;
+  breakdown: {
+    general: number;
+    reviews: number;
+    inline: number;
+    resolved: number;
+    unresolved: number;
+  };
+  comments: PRComment[];
+  authors: string[];
+  files: string[];
 } 

@@ -23,3 +23,6 @@ export {
 
 // PR Statistics
 export { handleGetPRStats } from "./pr-statistics.js";
+
+// PR Comments
+export { handleGetPRComments } from "./pr-comments.js";
