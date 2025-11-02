@@ -5,7 +5,12 @@
 
 import { exec } from "child_process";
 import { promisify } from "util";
-import { GitHubPR, GitHubCliError, PRStats } from "../types/index.js";
+import {
+  GitHubPR,
+  GitHubCliError,
+  PRStats,
+  PRComment,
+} from "../types/index.js";
 
 const execAsync = promisify(exec);
 
@@ -27,8 +32,12 @@ export class GitHubCli {
    */
   private async executeGhCommand(command: string): Promise<string> {
     try {
-      // Add repository context to command if available
-      let fullCommand = `gh ${command} --repo ${this.repo}`;
+      // Don't add --repo flag for 'gh api' commands as they don't support it
+      // For gh api, we use the repo context via the API endpoint or GraphQL variables
+      const isApiCommand = command.trim().startsWith('api ');
+      let fullCommand = isApiCommand
+        ? `gh ${command}`
+        : `gh ${command} --repo ${this.repo}`;
 
       const { stdout, stderr } = await execAsync(fullCommand);
 
@@ -134,15 +143,41 @@ export class GitHubCli {
   }
 
   /**
-   * List user's PRs
+   * List user's PRs with versatile filtering
    */
   async listMyPRs(
-    state: string = "open",
-    limit: number = 10
+    author: string,
+    state: string,
+    limit: number,
+    includeStats: boolean,
+    isDraft?: boolean,
+    dateFrom?: string,
+    dateTo?: string
   ): Promise<GitHubPR[]> {
-    const command = `pr list --author "@me" --state ${state} --limit ${limit} --json number,title,body,state,author,url,headRefName,baseRefName,createdAt,updatedAt,labels,isDraft`;
+    // Build JSON fields to fetch
+    let jsonFields = "number,title,body,state,author,url,headRefName,baseRefName,createdAt,updatedAt,labels,isDraft";
+    if (includeStats) {
+      jsonFields += ",additions,deletions,changedFiles";
+    }
+
+    const command = `pr list --author "${author}" --state ${state} --limit ${limit} --json ${jsonFields}`;
     const result = await this.executeGhCommand(command);
-    const prsData = JSON.parse(result);
+    let prsData = JSON.parse(result);
+
+    // Client-side filtering for draft status
+    if (isDraft !== undefined) {
+      prsData = prsData.filter((pr: any) => pr.isDraft === isDraft);
+    }
+
+    // Client-side filtering for date range
+    if (dateFrom || dateTo) {
+      prsData = prsData.filter((pr: any) => {
+        const prDate = new Date(pr.updatedAt);
+        if (dateFrom && prDate < new Date(dateFrom)) return false;
+        if (dateTo && prDate > new Date(dateTo + "T23:59:59")) return false;
+        return true;
+      });
+    }
 
     return prsData.map((pr: any) => ({
       number: pr.number,
@@ -160,9 +195,9 @@ export class GitHubCli {
       assignees: [],
       reviewers: [],
       isDraft: pr.isDraft || false,
-      additions: 0,
-      deletions: 0,
-      changedFiles: 0,
+      additions: includeStats ? pr.additions || 0 : 0,
+      deletions: includeStats ? pr.deletions || 0 : 0,
+      changedFiles: includeStats ? pr.changedFiles || 0 : 0,
     }));
   }
 
@@ -182,6 +217,72 @@ export class GitHubCli {
     } catch (error) {
       throw new GitHubCliError(`Failed to checkout PR #${prNumber}: ${error}`);
     }
+  }
+
+  /**
+   * Edit pull request details
+   */
+  async editPR(params: {
+    number: number;
+    title?: string;
+    body?: string;
+    base?: string;
+    state?: "open" | "closed";
+    addLabels?: string[];
+    removeLabels?: string[];
+  }): Promise<GitHubPR> {
+    const { number, title, body, base, state, addLabels, removeLabels } =
+      params;
+
+    // Validate that at least one field is being updated
+    if (
+      !title &&
+      !body &&
+      !base &&
+      !state &&
+      (!addLabels || addLabels.length === 0) &&
+      (!removeLabels || removeLabels.length === 0)
+    ) {
+      throw new GitHubCliError(
+        "At least one field must be provided to edit the PR"
+      );
+    }
+
+    let command = `pr edit ${number}`;
+
+    // Add optional parameters
+    if (title) {
+      command += ` --title "${title.replace(/"/g, '\\"')}"`;
+    }
+    if (body) {
+      command += ` --body "${body.replace(/"/g, '\\"')}"`;
+    }
+    if (base) {
+      command += ` --base "${base}"`;
+    }
+
+    // Handle state change
+    if (state === "closed") {
+      await this.executeGhCommand(`pr close ${number}`);
+    } else if (state === "open") {
+      await this.executeGhCommand(`pr reopen ${number}`);
+    }
+
+    // Execute main edit command if there are fields to update
+    if (title || body || base) {
+      await this.executeGhCommand(command);
+    }
+
+    // Handle label operations
+    if (addLabels && addLabels.length > 0) {
+      await this.addLabels(number, addLabels);
+    }
+    if (removeLabels && removeLabels.length > 0) {
+      await this.removeLabels(number, removeLabels);
+    }
+
+    // Return updated PR details
+    return this.getPRDetails(number);
   }
 
   /**
@@ -374,5 +475,283 @@ export class GitHubCli {
       periodStart: startDate.toISOString(),
       periodEnd: now.toISOString(),
     };
+  }
+
+  /**
+   * Get all comments on a PR including general, review, and inline comments
+   */
+  async getPRComments(params: {
+    prNumber: number;
+    includeGeneralComments?: boolean;
+    includeReviewComments?: boolean;
+    includeInlineComments?: boolean;
+    includeResolved?: boolean;
+    filterByAuthor?: string;
+    maxComments?: number;
+  }): Promise<PRComment[]> {
+    const [owner, repo] = this.parseRepoUrl();
+
+    // Build GraphQL query
+    const query = `
+      query($owner: String!, $repo: String!, $prNumber: Int!, $maxComments: Int!) {
+        repository(owner: $owner, name: $repo) {
+          pullRequest(number: $prNumber) {
+            ${
+              params.includeGeneralComments !== false
+                ? `
+            comments(first: $maxComments) {
+              nodes {
+                id
+                author { login avatarUrl }
+                body
+                createdAt
+                updatedAt
+                url
+              }
+            }`
+                : ""
+            }
+            ${
+              params.includeReviewComments !== false
+                ? `
+            reviews(first: $maxComments) {
+              nodes {
+                id
+                author { login avatarUrl }
+                body
+                state
+                createdAt
+                submittedAt
+                url
+                ${
+                  params.includeInlineComments !== false
+                    ? `
+                comments(first: 100) {
+                  nodes {
+                    id
+                    author { login avatarUrl }
+                    body
+                    path
+                    line
+                    startLine
+                    position
+                    diffHunk
+                    createdAt
+                    url
+                  }
+                }`
+                    : ""
+                }
+              }
+            }`
+                : ""
+            }
+            ${
+              params.includeInlineComments !== false
+                ? `
+            reviewThreads(first: 100) {
+              nodes {
+                id
+                isResolved
+                comments(first: 50) {
+                  nodes {
+                    id
+                    author { login avatarUrl }
+                    body
+                    path
+                    line
+                    startLine
+                    diffHunk
+                    createdAt
+                    url
+                  }
+                }
+              }
+            }`
+                : ""
+            }
+          }
+        }
+      }
+    `;
+
+    const variables = {
+      owner,
+      repo,
+      prNumber: params.prNumber,
+      maxComments: params.maxComments || 100,
+    };
+
+    // Execute GraphQL query
+    const result = await this.executeGraphQLQuery(query, variables);
+
+    // Parse and normalize the response
+    return this.normalizeCommentsResponse(result, params);
+  }
+
+  /**
+   * Parse repository URL to extract owner and repo name
+   */
+  private parseRepoUrl(): [string, string] {
+    // Handles formats: "owner/repo", "https://github.com/owner/repo", "git@github.com:owner/repo.git"
+    const match = this.repo.match(
+      /(?:github\.com[:/])?([^/]+)\/([^/.]+)(?:\.git)?$/
+    );
+    if (!match) throw new Error(`Invalid repository URL: ${this.repo}`);
+    return [match[1]!, match[2]!];
+  }
+
+  /**
+   * Execute a GraphQL query using gh api graphql
+   */
+  private async executeGraphQLQuery(
+    query: string,
+    variables: Record<string, any>
+  ): Promise<any> {
+    // Escape single quotes in the query
+    const escapedQuery = query.replace(/'/g, "'\\''");
+
+    // Build variable flags
+    const variableFlags = Object.entries(variables)
+      .map(([key, value]) => {
+        if (typeof value === "string") {
+          return `-F ${key}=${value}`;
+        }
+        return `-F ${key}=${value}`;
+      })
+      .join(" ");
+
+    const command = `api graphql -f query='${escapedQuery}' ${variableFlags}`;
+    const result = await this.executeGhCommand(command);
+    return JSON.parse(result);
+  }
+
+  /**
+   * Normalize GraphQL response into PRComment array
+   */
+  private normalizeCommentsResponse(
+    data: any,
+    params: {
+      prNumber: number;
+      includeGeneralComments?: boolean;
+      includeReviewComments?: boolean;
+      includeInlineComments?: boolean;
+      includeResolved?: boolean;
+      filterByAuthor?: string;
+      maxComments?: number;
+    }
+  ): PRComment[] {
+    const comments: PRComment[] = [];
+    const pr = data?.data?.repository?.pullRequest;
+
+    if (!pr) {
+      throw new Error("Failed to fetch PR data from GraphQL");
+    }
+
+    // Add general comments
+    if (pr.comments?.nodes) {
+      pr.comments.nodes.forEach((comment: any) => {
+        if (this.shouldIncludeComment(comment, params)) {
+          comments.push({
+            id: comment.id,
+            type: "general",
+            author: comment.author || { login: "unknown" },
+            body: comment.body || "",
+            createdAt: comment.createdAt,
+            updatedAt: comment.updatedAt,
+            url: comment.url,
+          });
+        }
+      });
+    }
+
+    // Add review comments
+    if (pr.reviews?.nodes) {
+      pr.reviews.nodes.forEach((review: any) => {
+        if (this.shouldIncludeComment(review, params)) {
+          // Add top-level review
+          if (review.body) {
+            comments.push({
+              id: review.id,
+              type: "review",
+              author: review.author || { login: "unknown" },
+              body: review.body,
+              createdAt: review.submittedAt || review.createdAt,
+              reviewState: review.state,
+              url: review.url,
+            });
+          }
+
+          // Add inline comments from review
+          if (review.comments?.nodes) {
+            review.comments.nodes.forEach((comment: any) => {
+              if (this.shouldIncludeComment(comment, params)) {
+                comments.push({
+                  id: comment.id,
+                  type: "inline",
+                  author: comment.author || { login: "unknown" },
+                  body: comment.body || "",
+                  createdAt: comment.createdAt,
+                  path: comment.path,
+                  line: comment.line,
+                  startLine: comment.startLine,
+                  position: comment.position,
+                  diffHunk: comment.diffHunk,
+                  url: comment.url,
+                });
+              }
+            });
+          }
+        }
+      });
+    }
+
+    // Add review thread comments with resolution status
+    if (pr.reviewThreads?.nodes) {
+      pr.reviewThreads.nodes.forEach((thread: any) => {
+        if (params.includeResolved || !thread.isResolved) {
+          thread.comments.nodes.forEach((comment: any) => {
+            if (this.shouldIncludeComment(comment, params)) {
+              // Avoid duplicates by checking if comment already exists
+              const exists = comments.some((c) => c.id === comment.id);
+              if (!exists) {
+                comments.push({
+                  id: comment.id,
+                  type: "inline",
+                  author: comment.author || { login: "unknown" },
+                  body: comment.body || "",
+                  createdAt: comment.createdAt,
+                  path: comment.path,
+                  line: comment.line,
+                  startLine: comment.startLine,
+                  diffHunk: comment.diffHunk,
+                  isResolved: thread.isResolved,
+                  threadId: thread.id,
+                  url: comment.url,
+                });
+              }
+            }
+          });
+        }
+      });
+    }
+
+    return comments;
+  }
+
+  /**
+   * Check if a comment should be included based on filters
+   */
+  private shouldIncludeComment(
+    comment: any,
+    params: {
+      filterByAuthor?: string;
+    }
+  ): boolean {
+    // Filter by author if specified
+    if (params.filterByAuthor && comment.author?.login !== params.filterByAuthor) {
+      return false;
+    }
+    return true;
   }
 }

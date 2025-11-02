@@ -87,4 +87,9 @@ jspm_packages/
 .fusebox/
 
 # DynamoDB Local files
-.dynamodb/ 
+.dynamodb/
+
+# Prisma
+prisma/*.db
+prisma/*.db-journal
+prisma/migrations/ 

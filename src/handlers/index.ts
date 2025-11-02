@@ -3,29 +3,36 @@
  * Author: Shivaraj Bakale
  */
 
-// File Operations
-export {
-  handleReadFile,
-  handleWriteFile,
-  handleListDirectory,
-} from "./file-operations.js";
-
 // GitHub Operations
 export {
   handleCreatePR,
+  handleEditPR,
   handleGetPRDetails,
   handleListMyPRs,
   handleCheckoutPRBranch,
   handleEnablePreviewEnv,
-} from "./github-operations.js";
-
-// Review & Analysis
-export {
-  handleGenerateReviewPrompt,
-  handleGenerateCodeChecklist,
-  handleAnalyzePRComplexity,
   handleGetPRDiffSummary,
-} from "./review-analysis.js";
+} from "./github-operations.js";
 
 // PR Statistics
 export { handleGetPRStats } from "./pr-statistics.js";
+
+// PR Comments
+export { handleGetPRComments } from "./pr-comments.js";
+
+// JIRA Operations
+export {
+  handleGetJiraSprints,
+  handleGetJiraSprintDetails,
+  handleGetJiraBoards,
+  handleGetMyJiraTickets,
+  handleCreateJiraTicket,
+} from "./jira-sprints.js";
+
+// Highlight Management (Performance Reviews)
+export {
+  handleCreateHighlight,
+  handleGetMyHighlights,
+  handleGetHighlightSummary,
+  handleListApolloValues,
+} from "./highlights.js";

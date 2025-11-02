@@ -5,271 +5,429 @@
  * Author: Shivaraj Bakale
  */
 
-import { Server } from "@modelcontextprotocol/sdk/server/index.js";
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import {
-  CallToolRequestSchema,
-  ErrorCode,
-  ListToolsRequestSchema,
-  McpError,
-} from "@modelcontextprotocol/sdk/types.js";
 
 import { ToolResponse } from "./types/index.js";
-
 import { TOOLS } from "./tools/index.js";
 import { SCHEMAS } from "./schemas/index.js";
 import {
   handleCreatePR,
+  handleEditPR,
   handleGetPRDetails,
   handleListMyPRs,
   handleCheckoutPRBranch,
   handleEnablePreviewEnv,
-  handleGenerateReviewPrompt,
-  handleGenerateCodeChecklist,
-  handleAnalyzePRComplexity,
+  handleGetPRComments,
   handleGetPRDiffSummary,
   handleGetPRStats,
+  handleGetJiraSprints,
+  handleGetJiraSprintDetails,
+  handleGetJiraBoards,
+  handleGetMyJiraTickets,
+  handleCreateJiraTicket,
+  handleCreateHighlight,
+  handleGetMyHighlights,
+  handleGetHighlightSummary,
+  handleListApolloValues,
 } from "./handlers/index.js";
 
 class PRBuddyServer {
-  private server: Server;
+  private server: McpServer;
 
   constructor() {
-    this.server = new Server(
-      {
-        name: "pr-buddy",
-        version: "2.0.0",
-      },
-      {
-        capabilities: {
-          tools: {},
-        },
-      }
-    );
+    this.server = new McpServer({
+      name: "pr-buddy",
+      version: "2.0.0",
+    });
 
     this.setupToolHandlers();
     this.setupErrorHandling();
   }
 
+  /**
+   * Converts ToolResponse to MCP protocol response format
+   */
+  private convertToolResponse(response: ToolResponse) {
+    return {
+      content: response.content,
+      isError: response.isError,
+    };
+  }
+
   private setupToolHandlers(): void {
-    this.server.setRequestHandler(ListToolsRequestSchema, async () => ({
-      tools: [
-        // Core GitHub Operations
-        {
-          name: TOOLS.CREATE_PR,
-          description: SCHEMAS.CREATE_PR.description,
-          inputSchema: {
-            type: "object",
-            properties: {
-              title: SCHEMAS.CREATE_PR.inputSchema.title,
-              body: SCHEMAS.CREATE_PR.inputSchema.body,
-              base: SCHEMAS.CREATE_PR.inputSchema.base.default("master"),
-              head: SCHEMAS.CREATE_PR.inputSchema.head,
-              draft: SCHEMAS.CREATE_PR.inputSchema.draft,
-              repo: SCHEMAS.CREATE_PR.inputSchema.repositoryUrl,
-            },
-            required: ["title", "body", "base", "head", "repo"],
-          },
-        },
-        {
-          name: TOOLS.GET_PR_DETAILS,
-          description: SCHEMAS.GET_PR_DETAILS.description,
-          inputSchema: {
-            type: "object",
-            properties: {
-              number: SCHEMAS.GET_PR_DETAILS.inputSchema.number,
-              repo: SCHEMAS.GET_PR_DETAILS.inputSchema.repositoryUrl,
-            },
-            required: ["number", "repo"],
-          },
-        },
-        {
-          name: TOOLS.LIST_MY_PRS,
-          description: SCHEMAS.LIST_MY_PRS.description,
-          inputSchema: {
-            type: "object",
-            properties: {
-              state: SCHEMAS.LIST_MY_PRS.inputSchema.state,
-              limit: SCHEMAS.LIST_MY_PRS.inputSchema.limit,
-              repo: SCHEMAS.LIST_MY_PRS.inputSchema.repositoryUrl,
-            },
-            required: ["repo"],
-          },
-        },
-        {
-          name: TOOLS.CHECKOUT_PR_BRANCH,
-          description: SCHEMAS.CHECKOUT_PR_BRANCH.description,
-          inputSchema: {
-            type: "object",
-            properties: {
-              prNumber: SCHEMAS.CHECKOUT_PR_BRANCH.inputSchema.prNumber,
-              createLocal: SCHEMAS.CHECKOUT_PR_BRANCH.inputSchema.createLocal,
-              repo: SCHEMAS.CHECKOUT_PR_BRANCH.inputSchema.repositoryUrl,
-            },
-            required: ["prNumber", "repo"],
-          },
-        },
+    // Core GitHub Operations
 
-        // Review & Analysis Tools
-        {
-          name: TOOLS.GENERATE_REVIEW_PROMPT,
-          description: SCHEMAS.GENERATE_REVIEW_PROMPT.description,
-          inputSchema: {
-            type: "object",
-            properties: {
-              prNumber: SCHEMAS.GENERATE_REVIEW_PROMPT.inputSchema.prNumber,
-              reviewType: SCHEMAS.GENERATE_REVIEW_PROMPT.inputSchema.reviewType,
-              repo: SCHEMAS.GENERATE_REVIEW_PROMPT.inputSchema.repositoryUrl,
-            },
-            required: ["prNumber", "reviewType", "repo"],
-          },
+    // CREATE_PR - with elicitation support
+    this.server.registerTool(
+      TOOLS.CREATE_PR,
+      {
+        title: SCHEMAS.CREATE_PR.title,
+        description: SCHEMAS.CREATE_PR.description,
+        inputSchema: {
+          title: SCHEMAS.CREATE_PR.inputSchema.title,
+          body: SCHEMAS.CREATE_PR.inputSchema.body,
+          base: SCHEMAS.CREATE_PR.inputSchema.base,
+          head: SCHEMAS.CREATE_PR.inputSchema.head,
+          labels: SCHEMAS.CREATE_PR.inputSchema.labels,
+          draft: SCHEMAS.CREATE_PR.inputSchema.draft,
+          repo: SCHEMAS.CREATE_PR.inputSchema.repositoryUrl,
         },
-        {
-          name: TOOLS.ANALYZE_PR_COMPLEXITY,
-          description: SCHEMAS.ANALYZE_PR_COMPLEXITY.description,
-          inputSchema: {
-            type: "object",
-            properties: {
-              prNumber: SCHEMAS.ANALYZE_PR_COMPLEXITY.inputSchema.prNumber,
-              includeRecommendations:
-                SCHEMAS.ANALYZE_PR_COMPLEXITY.inputSchema
-                  .includeRecommendations,
-              repo: SCHEMAS.ANALYZE_PR_COMPLEXITY.inputSchema.repositoryUrl,
-            },
-            required: ["prNumber", "includeRecommendations", "repo"],
-          },
-        },
-        {
-          name: TOOLS.ENABLE_PREVIEW_ENV,
-          description: SCHEMAS.ENABLE_PREVIEW_ENV.description,
-          inputSchema: {
-            type: "object",
-            properties: {
-              prNumber: SCHEMAS.ENABLE_PREVIEW_ENV.inputSchema.prNumber,
-              repo: SCHEMAS.ENABLE_PREVIEW_ENV.inputSchema.repositoryUrl,
-            },
-            required: ["prNumber", "repo"],
-          },
-        },
-        // PR Statistics
-        {
-          name: TOOLS.GET_PR_STATS,
-          description: SCHEMAS.GET_PR_STATS.description,
-          inputSchema: {
-            type: "object",
-            properties: {
-              period: SCHEMAS.GET_PR_STATS.inputSchema.period,
-              repo: SCHEMAS.GET_PR_STATS.inputSchema.repositoryUrl,
-            },
-            required: ["period", "repo"],
-          },
-        },
-      ],
-    }));
-
-    this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
-      try {
-        const { name, arguments: args } = request.params;
-
-        let result: ToolResponse;
-
-        switch (name) {
-          case TOOLS.CREATE_PR:
-            result = await handleCreatePR(
-              args as {
-                title: string;
-                body: string;
-                base: string;
-                head: string;
-                labels: string[];
-                draft: boolean;
-                repo?: string;
-              }
-            );
-            break;
-          case TOOLS.GET_PR_DETAILS:
-            result = await handleGetPRDetails(args as { number: number });
-            break;
-          case TOOLS.LIST_MY_PRS:
-            result = await handleListMyPRs(
-              args as { state?: string; limit?: number; repo?: string }
-            );
-            break;
-          case TOOLS.CHECKOUT_PR_BRANCH:
-            result = await handleCheckoutPRBranch(
-              args as { prNumber: number; createLocal?: boolean; repo?: string }
-            );
-            break;
-          case TOOLS.ENABLE_PREVIEW_ENV:
-            result = await handleEnablePreviewEnv(
-              args as { prNumber: number; repo?: string }
-            );
-            break;
-          case TOOLS.GENERATE_REVIEW_PROMPT:
-            result = await handleGenerateReviewPrompt(
-              args as { prNumber: number; reviewType?: string; repo?: string }
-            );
-            break;
-          case TOOLS.GENERATE_CODE_CHECKLIST:
-            result = await handleGenerateCodeChecklist(
-              args as {
-                prNumber: number;
-                includeSecurityChecks?: boolean;
-                includePerformanceChecks?: boolean;
-                repo?: string;
-              }
-            );
-            break;
-          case TOOLS.ANALYZE_PR_COMPLEXITY:
-            result = await handleAnalyzePRComplexity(
-              args as {
-                prNumber: number;
-                includeRecommendations?: boolean;
-                repo?: string;
-              }
-            );
-            break;
-          case TOOLS.GET_PR_DIFF_SUMMARY:
-            result = await handleGetPRDiffSummary(
-              args as {
-                prNumber: number;
-                includeFileStats?: boolean;
-                maxFiles?: number;
-                repo?: string;
-              }
-            );
-            break;
-          case TOOLS.GET_PR_STATS:
-            result = await handleGetPRStats(
-              args as { period: "day" | "week" | "month"; repo?: string }
-            );
-            break;
-
-          default:
-            throw new McpError(
-              ErrorCode.MethodNotFound,
-              `Unknown tool: ${name}`
-            );
-        }
-
-        return {
-          content: result.content,
-          isError: result.isError,
-        };
-      } catch (error) {
-        if (error instanceof McpError) {
-          throw error;
-        }
-        throw new McpError(
-          ErrorCode.InternalError,
-          `Tool execution failed: ${error}`
-        );
+      },
+      async (args) => {
+        const response = await handleCreatePR(args as any, this.server);
+        return this.convertToolResponse(response);
       }
-    });
+    );
+
+    // GET_PR_DETAILS
+    this.server.registerTool(
+      TOOLS.GET_PR_DETAILS,
+      {
+        title: SCHEMAS.GET_PR_DETAILS.title,
+        description: SCHEMAS.GET_PR_DETAILS.description,
+        inputSchema: {
+          number: SCHEMAS.GET_PR_DETAILS.inputSchema.number,
+          repo: SCHEMAS.GET_PR_DETAILS.inputSchema.repositoryUrl,
+        },
+      },
+      async (args) => {
+        const response = await handleGetPRDetails(args as any);
+        return this.convertToolResponse(response);
+      }
+    );
+
+    // EDIT_PR
+    this.server.registerTool(
+      TOOLS.EDIT_PR,
+      {
+        title: SCHEMAS.EDIT_PR.title,
+        description: SCHEMAS.EDIT_PR.description,
+        inputSchema: {
+          number: SCHEMAS.EDIT_PR.inputSchema.number,
+          title: SCHEMAS.EDIT_PR.inputSchema.title,
+          body: SCHEMAS.EDIT_PR.inputSchema.body,
+          base: SCHEMAS.EDIT_PR.inputSchema.base,
+          state: SCHEMAS.EDIT_PR.inputSchema.state,
+          addLabels: SCHEMAS.EDIT_PR.inputSchema.addLabels,
+          removeLabels: SCHEMAS.EDIT_PR.inputSchema.removeLabels,
+          repo: SCHEMAS.EDIT_PR.inputSchema.repositoryUrl,
+        },
+      },
+      async (args) => {
+        const response = await handleEditPR(args as any);
+        return this.convertToolResponse(response);
+      }
+    );
+
+    // LIST_MY_PRS
+    this.server.registerTool(
+      TOOLS.LIST_MY_PRS,
+      {
+        title: SCHEMAS.LIST_MY_PRS.title,
+        description: SCHEMAS.LIST_MY_PRS.description,
+        inputSchema: {
+          author: SCHEMAS.LIST_MY_PRS.inputSchema.author,
+          state: SCHEMAS.LIST_MY_PRS.inputSchema.state,
+          isDraft: SCHEMAS.LIST_MY_PRS.inputSchema.isDraft,
+          dateFrom: SCHEMAS.LIST_MY_PRS.inputSchema.dateFrom,
+          dateTo: SCHEMAS.LIST_MY_PRS.inputSchema.dateTo,
+          limit: SCHEMAS.LIST_MY_PRS.inputSchema.limit,
+          includeLabels: SCHEMAS.LIST_MY_PRS.inputSchema.includeLabels,
+          includeStats: SCHEMAS.LIST_MY_PRS.inputSchema.includeStats,
+          repo: SCHEMAS.LIST_MY_PRS.inputSchema.repositoryUrl,
+        },
+      },
+      async (args) => {
+        const response = await handleListMyPRs(args as any);
+        return this.convertToolResponse(response);
+      }
+    );
+
+    // CHECKOUT_PR_BRANCH
+    this.server.registerTool(
+      TOOLS.CHECKOUT_PR_BRANCH,
+      {
+        title: SCHEMAS.CHECKOUT_PR_BRANCH.title,
+        description: SCHEMAS.CHECKOUT_PR_BRANCH.description,
+        inputSchema: {
+          prNumber: SCHEMAS.CHECKOUT_PR_BRANCH.inputSchema.prNumber,
+          createLocal: SCHEMAS.CHECKOUT_PR_BRANCH.inputSchema.createLocal,
+          repo: SCHEMAS.CHECKOUT_PR_BRANCH.inputSchema.repositoryUrl,
+        },
+      },
+      async (args) => {
+        const response = await handleCheckoutPRBranch(args as any);
+        return this.convertToolResponse(response);
+      }
+    );
+
+    // ENABLE_PREVIEW_ENV
+    this.server.registerTool(
+      TOOLS.ENABLE_PREVIEW_ENV,
+      {
+        title: SCHEMAS.ENABLE_PREVIEW_ENV.title,
+        description: SCHEMAS.ENABLE_PREVIEW_ENV.description,
+        inputSchema: {
+          prNumber: SCHEMAS.ENABLE_PREVIEW_ENV.inputSchema.prNumber,
+          repo: SCHEMAS.ENABLE_PREVIEW_ENV.inputSchema.repositoryUrl,
+        },
+      },
+      async (args) => {
+        const response = await handleEnablePreviewEnv(args as any);
+        return this.convertToolResponse(response);
+      }
+    );
+
+    // GET_PR_COMMENTS
+    this.server.registerTool(
+      TOOLS.GET_PR_COMMENTS,
+      {
+        title: SCHEMAS.GET_PR_COMMENTS.title,
+        description: SCHEMAS.GET_PR_COMMENTS.description,
+        inputSchema: {
+          prNumber: SCHEMAS.GET_PR_COMMENTS.inputSchema.prNumber,
+          includeGeneralComments:
+            SCHEMAS.GET_PR_COMMENTS.inputSchema.includeGeneralComments,
+          includeReviewComments:
+            SCHEMAS.GET_PR_COMMENTS.inputSchema.includeReviewComments,
+          includeInlineComments:
+            SCHEMAS.GET_PR_COMMENTS.inputSchema.includeInlineComments,
+          includeResolved: SCHEMAS.GET_PR_COMMENTS.inputSchema.includeResolved,
+          filterByAuthor: SCHEMAS.GET_PR_COMMENTS.inputSchema.filterByAuthor,
+          groupBy: SCHEMAS.GET_PR_COMMENTS.inputSchema.groupBy,
+          maxComments: SCHEMAS.GET_PR_COMMENTS.inputSchema.maxComments,
+          repo: SCHEMAS.GET_PR_COMMENTS.inputSchema.repositoryUrl,
+        },
+      },
+      async (args) => {
+        const response = await handleGetPRComments(args as any);
+        return this.convertToolResponse(response);
+      }
+    );
+
+    // GET_PR_DIFF_SUMMARY
+    this.server.registerTool(
+      TOOLS.GET_PR_DIFF_SUMMARY,
+      {
+        title: SCHEMAS.GET_PR_DIFF_SUMMARY.title,
+        description: SCHEMAS.GET_PR_DIFF_SUMMARY.description,
+        inputSchema: {
+          prNumber: SCHEMAS.GET_PR_DIFF_SUMMARY.inputSchema.prNumber,
+          includeFileStats:
+            SCHEMAS.GET_PR_DIFF_SUMMARY.inputSchema.includeFileStats,
+          maxFiles: SCHEMAS.GET_PR_DIFF_SUMMARY.inputSchema.maxFiles,
+          repo: SCHEMAS.GET_PR_DIFF_SUMMARY.inputSchema.repositoryUrl,
+        },
+      },
+      async (args) => {
+        const response = await handleGetPRDiffSummary(args as any);
+        return this.convertToolResponse(response);
+      }
+    );
+
+    // PR Statistics
+
+    // GET_PR_STATS
+    this.server.registerTool(
+      TOOLS.GET_PR_STATS,
+      {
+        title: SCHEMAS.GET_PR_STATS.title,
+        description: SCHEMAS.GET_PR_STATS.description,
+        inputSchema: {
+          period: SCHEMAS.GET_PR_STATS.inputSchema.period,
+          repo: SCHEMAS.GET_PR_STATS.inputSchema.repositoryUrl,
+        },
+      },
+      async (args) => {
+        const response = await handleGetPRStats(args as any);
+        return this.convertToolResponse(response);
+      }
+    );
+
+    // JIRA Tools
+
+    // GET_JIRA_SPRINTS
+    this.server.registerTool(
+      TOOLS.GET_JIRA_SPRINTS,
+      {
+        title: SCHEMAS.GET_JIRA_SPRINTS.title,
+        description: SCHEMAS.GET_JIRA_SPRINTS.description,
+        inputSchema: {
+          site: SCHEMAS.GET_JIRA_SPRINTS.inputSchema.site,
+          boardId: SCHEMAS.GET_JIRA_SPRINTS.inputSchema.boardId,
+          state: SCHEMAS.GET_JIRA_SPRINTS.inputSchema.state,
+          maxResults: SCHEMAS.GET_JIRA_SPRINTS.inputSchema.maxResults,
+          includeTickets: SCHEMAS.GET_JIRA_SPRINTS.inputSchema.includeTickets,
+        },
+      },
+      async (args) => {
+        const response = await handleGetJiraSprints(args as any);
+        return this.convertToolResponse(response);
+      }
+    );
+
+    // GET_JIRA_SPRINT_DETAILS
+    this.server.registerTool(
+      TOOLS.GET_JIRA_SPRINT_DETAILS,
+      {
+        title: SCHEMAS.GET_JIRA_SPRINT_DETAILS.title,
+        description: SCHEMAS.GET_JIRA_SPRINT_DETAILS.description,
+        inputSchema: {
+          site: SCHEMAS.GET_JIRA_SPRINT_DETAILS.inputSchema.site,
+          sprintId: SCHEMAS.GET_JIRA_SPRINT_DETAILS.inputSchema.sprintId,
+          groupBy: SCHEMAS.GET_JIRA_SPRINT_DETAILS.inputSchema.groupBy,
+          includeSubtasks: SCHEMAS.GET_JIRA_SPRINT_DETAILS.inputSchema.includeSubtasks,
+        },
+      },
+      async (args) => {
+        const response = await handleGetJiraSprintDetails(args as any);
+        return this.convertToolResponse(response);
+      }
+    );
+
+    // GET_JIRA_BOARDS
+    this.server.registerTool(
+      TOOLS.GET_JIRA_BOARDS,
+      {
+        title: SCHEMAS.GET_JIRA_BOARDS.title,
+        description: SCHEMAS.GET_JIRA_BOARDS.description,
+        inputSchema: {
+          site: SCHEMAS.GET_JIRA_BOARDS.inputSchema.site,
+          projectKey: SCHEMAS.GET_JIRA_BOARDS.inputSchema.projectKey,
+          type: SCHEMAS.GET_JIRA_BOARDS.inputSchema.type,
+          maxResults: SCHEMAS.GET_JIRA_BOARDS.inputSchema.maxResults,
+        },
+      },
+      async (args) => {
+        const response = await handleGetJiraBoards(args as any);
+        return this.convertToolResponse(response);
+      }
+    );
+
+    // GET_MY_JIRA_TICKETS
+    this.server.registerTool(
+      TOOLS.GET_MY_JIRA_TICKETS,
+      {
+        title: SCHEMAS.GET_MY_JIRA_TICKETS.title,
+        description: SCHEMAS.GET_MY_JIRA_TICKETS.description,
+        inputSchema: {
+          site: SCHEMAS.GET_MY_JIRA_TICKETS.inputSchema.site,
+          status: SCHEMAS.GET_MY_JIRA_TICKETS.inputSchema.status,
+          sprint: SCHEMAS.GET_MY_JIRA_TICKETS.inputSchema.sprint,
+          maxResults: SCHEMAS.GET_MY_JIRA_TICKETS.inputSchema.maxResults,
+          groupBy: SCHEMAS.GET_MY_JIRA_TICKETS.inputSchema.groupBy,
+        },
+      },
+      async (args) => {
+        const response = await handleGetMyJiraTickets(args as any);
+        return this.convertToolResponse(response);
+      }
+    );
+
+    // CREATE_JIRA_TICKET
+    this.server.registerTool(
+      TOOLS.CREATE_JIRA_TICKET,
+      {
+        title: SCHEMAS.CREATE_JIRA_TICKET.title,
+        description: SCHEMAS.CREATE_JIRA_TICKET.description,
+        inputSchema: {
+          site: SCHEMAS.CREATE_JIRA_TICKET.inputSchema.site,
+          project: SCHEMAS.CREATE_JIRA_TICKET.inputSchema.project,
+          type: SCHEMAS.CREATE_JIRA_TICKET.inputSchema.type,
+          summary: SCHEMAS.CREATE_JIRA_TICKET.inputSchema.summary,
+          description: SCHEMAS.CREATE_JIRA_TICKET.inputSchema.description,
+          assignee: SCHEMAS.CREATE_JIRA_TICKET.inputSchema.assignee,
+          labels: SCHEMAS.CREATE_JIRA_TICKET.inputSchema.labels,
+          priority: SCHEMAS.CREATE_JIRA_TICKET.inputSchema.priority,
+          parent: SCHEMAS.CREATE_JIRA_TICKET.inputSchema.parent,
+        },
+      },
+      async (args) => {
+        const response = await handleCreateJiraTicket(args as any);
+        return this.convertToolResponse(response);
+      }
+    );
+
+    // Highlight Management Tools (Performance Reviews)
+
+    // CREATE_HIGHLIGHT
+    this.server.registerTool(
+      TOOLS.CREATE_HIGHLIGHT,
+      {
+        title: SCHEMAS.CREATE_HIGHLIGHT.title,
+        description: SCHEMAS.CREATE_HIGHLIGHT.description,
+        inputSchema: {
+          userId: SCHEMAS.CREATE_HIGHLIGHT.inputSchema.userId,
+          title: SCHEMAS.CREATE_HIGHLIGHT.inputSchema.title,
+          description: SCHEMAS.CREATE_HIGHLIGHT.inputSchema.description,
+          artifactType: SCHEMAS.CREATE_HIGHLIGHT.inputSchema.artifactType,
+          artifactUrl: SCHEMAS.CREATE_HIGHLIGHT.inputSchema.artifactUrl,
+          achievedAt: SCHEMAS.CREATE_HIGHLIGHT.inputSchema.achievedAt,
+          apolloValueIds: SCHEMAS.CREATE_HIGHLIGHT.inputSchema.apolloValueIds,
+        },
+      },
+      async (args) => {
+        const response = await handleCreateHighlight(args as any);
+        return this.convertToolResponse(response);
+      }
+    );
+
+    // GET_MY_HIGHLIGHTS
+    this.server.registerTool(
+      TOOLS.GET_MY_HIGHLIGHTS,
+      {
+        title: SCHEMAS.GET_MY_HIGHLIGHTS.title,
+        description: SCHEMAS.GET_MY_HIGHLIGHTS.description,
+        inputSchema: {
+          userId: SCHEMAS.GET_MY_HIGHLIGHTS.inputSchema.userId,
+          startDate: SCHEMAS.GET_MY_HIGHLIGHTS.inputSchema.startDate,
+          endDate: SCHEMAS.GET_MY_HIGHLIGHTS.inputSchema.endDate,
+          apolloValue: SCHEMAS.GET_MY_HIGHLIGHTS.inputSchema.apolloValue,
+          artifactType: SCHEMAS.GET_MY_HIGHLIGHTS.inputSchema.artifactType,
+        },
+      },
+      async (args) => {
+        const response = await handleGetMyHighlights(args as any);
+        return this.convertToolResponse(response);
+      }
+    );
+
+    // GET_HIGHLIGHT_SUMMARY
+    this.server.registerTool(
+      TOOLS.GET_HIGHLIGHT_SUMMARY,
+      {
+        title: SCHEMAS.GET_HIGHLIGHT_SUMMARY.title,
+        description: SCHEMAS.GET_HIGHLIGHT_SUMMARY.description,
+        inputSchema: {
+          userId: SCHEMAS.GET_HIGHLIGHT_SUMMARY.inputSchema.userId,
+          startDate: SCHEMAS.GET_HIGHLIGHT_SUMMARY.inputSchema.startDate,
+          endDate: SCHEMAS.GET_HIGHLIGHT_SUMMARY.inputSchema.endDate,
+        },
+      },
+      async (args) => {
+        const response = await handleGetHighlightSummary(args as any);
+        return this.convertToolResponse(response);
+      }
+    );
+
+    // LIST_APOLLO_VALUES
+    this.server.registerTool(
+      TOOLS.LIST_APOLLO_VALUES,
+      {
+        title: SCHEMAS.LIST_APOLLO_VALUES.title,
+        description: SCHEMAS.LIST_APOLLO_VALUES.description,
+        inputSchema: {},
+      },
+      async () => {
+        const response = await handleListApolloValues();
+        return this.convertToolResponse(response);
+      }
+    );
   }
 
   private setupErrorHandling(): void {
-    this.server.onerror = (error) => console.error("[MCP Error]", error);
+    // Handle process termination
     process.on("SIGINT", async () => {
       await this.server.close();
       process.exit(0);

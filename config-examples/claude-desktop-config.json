@@ -6,7 +6,8 @@
         "/Users/shivarajbakale/Projects/MCP/Projects/pr-buddy/dist/index.js"
       ],
       "env": {
-        "NODE_ENV": "production"
+        "NODE_ENV": "production",
+        "GITHUB_TOKEN": "YOUR_GITHUB_TOKEN_HERE"
       }
     }
   }

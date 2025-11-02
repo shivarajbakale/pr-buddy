@@ -42,38 +42,6 @@ export interface PRTemplate {
   assignees?: string[];
 }
 
-export interface PRComplexityAnalysis {
-  score: number;
-  level: 'simple' | 'moderate' | 'complex' | 'very-complex';
-  factors: {
-    fileCount: number;
-    linesChanged: number;
-    additionDeletionRatio: number;
-    filesChanged: number;
-    linesAdded: number;
-    linesDeleted: number;
-    complexity: string;
-  };
-  risks: string[];
-  recommendations: string[];
-  estimatedReviewTime: string;
-  recommendedReviewTime: string;
-  suggestions: string[];
-}
-
-export interface ReviewPrompt {
-  type: string;
-  title: string;
-  prompt: string;
-  sections: Array<{
-    heading: string;
-    questions: string[];
-    focusAreas: string[];
-  }>;
-  checklistItems: string[];
-  timeEstimate: string;
-}
-
 export interface PRStats {
   period: 'day' | 'week' | 'month';
   totalMerged: number;
@@ -131,4 +99,45 @@ export interface LabelOperation {
 export interface BranchCheckout {
   prNumber: number;
   createLocal?: boolean;
+}
+
+// PR Comments Types
+export interface PRComment {
+  id: string;
+  type: "general" | "review" | "inline";
+  author: {
+    login: string;
+    avatarUrl?: string;
+  };
+  body: string;
+  createdAt: string;
+  updatedAt?: string;
+  url?: string;
+
+  // Review-specific
+  reviewState?: "APPROVED" | "CHANGES_REQUESTED" | "COMMENTED" | "DISMISSED";
+
+  // Inline comment-specific
+  path?: string;
+  line?: number;
+  startLine?: number;
+  position?: number;
+  diffHunk?: string;
+  isResolved?: boolean;
+  threadId?: string;
+}
+
+export interface PRCommentsResponse {
+  prNumber: number;
+  totalComments: number;
+  breakdown: {
+    general: number;
+    reviews: number;
+    inline: number;
+    resolved: number;
+    unresolved: number;
+  };
+  comments: PRComment[];
+  authors: string[];
+  files: string[];
 } 

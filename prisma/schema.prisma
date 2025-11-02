@@ -1,0 +1,160 @@
+// This is your Prisma schema file
+// Learn more: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// JIRA Ticket cache for faster lookups
+model JiraTicket {
+  id            String   @id @default(cuid())
+  key           String   @unique // e.g., "PROJ-123"
+  summary       String
+  status        String
+  assignee      String
+  priority      String
+  type          String
+  storyPoints   Int?
+  labels        String   // JSON array stored as string
+  created       DateTime
+  updated       DateTime
+  sprintId      Int?
+  prLinks       PRTicketLink[]
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([key])
+  @@index([assignee])
+  @@index([status])
+}
+
+// GitHub PR metadata cache
+model GitHubPR {
+  id            String   @id @default(cuid())
+  number        Int
+  repository    String   // Full repo URL
+  title         String
+  state         String
+  author        String
+  base          String
+  head          String
+  isDraft       Boolean
+  created       DateTime
+  updated       DateTime
+  merged        Boolean  @default(false)
+  mergedAt      DateTime?
+  ticketLinks   PRTicketLink[]
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([repository, number])
+  @@index([repository, state])
+  @@index([author])
+}
+
+// Link table between PRs and JIRA tickets
+model PRTicketLink {
+  id            String      @id @default(cuid())
+  prId          String
+  ticketId      String
+  linkedAt      DateTime    @default(now())
+
+  pr            GitHubPR    @relation(fields: [prId], references: [id], onDelete: Cascade)
+  ticket        JiraTicket  @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@unique([prId, ticketId])
+  @@index([prId])
+  @@index([ticketId])
+}
+
+// User settings and preferences
+model UserSettings {
+  id                String   @id @default(cuid())
+  userId            String   @unique // Could be GitHub username or email
+  defaultRepo       String?
+  defaultJiraSite   String?
+  defaultJiraProject String?
+  preferences       String   // JSON object stored as string
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([userId])
+}
+
+// Sprint cache for quick access
+model JiraSprint {
+  id            String   @id @default(cuid())
+  sprintId      Int      @unique
+  name          String
+  state         String
+  boardId       Int
+  startDate     DateTime?
+  endDate       DateTime?
+  completeDate  DateTime?
+  goal          String?
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([boardId])
+  @@index([state])
+}
+
+// Apollo company values
+model ApolloValue {
+  id            String                 @id @default(cuid())
+  title         String                 @unique
+  description   String
+  highlights    HighlightApolloValue[]
+
+  createdAt     DateTime               @default(now())
+  updatedAt     DateTime               @updatedAt
+
+  @@index([title])
+}
+
+// Developer performance highlights
+model Highlight {
+  id            String                 @id @default(cuid())
+  userId        String                 // Developer identifier (GitHub username or email)
+  title         String                 // Brief title of the achievement
+  description   String?                // Optional detailed description
+  artifactType  String                 // "github_pr", "slack_message", "jira_ticket", "document", "demo", "meeting", "other"
+  artifactUrl   String                 // Link to the artifact (PR, Slack thread, doc, etc.)
+  achievedAt    DateTime               // When the achievement happened
+
+  // Relationships
+  apolloValues  HighlightApolloValue[]
+
+  createdAt     DateTime               @default(now())
+  updatedAt     DateTime               @updatedAt
+
+  @@index([userId])
+  @@index([achievedAt])
+  @@index([artifactType])
+  @@index([userId, achievedAt])
+}
+
+// Junction table linking highlights to Apollo values (many-to-many)
+model HighlightApolloValue {
+  id            String      @id @default(cuid())
+  highlightId   String
+  apolloValueId String
+
+  highlight     Highlight   @relation(fields: [highlightId], references: [id], onDelete: Cascade)
+  apolloValue   ApolloValue @relation(fields: [apolloValueId], references: [id], onDelete: Cascade)
+
+  createdAt     DateTime    @default(now())
+
+  @@unique([highlightId, apolloValueId])
+  @@index([highlightId])
+  @@index([apolloValueId])
+}
