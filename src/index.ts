@@ -26,6 +26,7 @@ import {
   handleGetJiraBoards,
   handleGetMyJiraTickets,
   handleCreateJiraTicket,
+  handleUpdateJiraTicketStatus,
   handleCreateHighlight,
   handleGetMyHighlights,
   handleGetHighlightSummary,
@@ -345,6 +346,24 @@ class PRBuddyServer {
       },
       async (args) => {
         const response = await handleCreateJiraTicket(args as any);
+        return this.convertToolResponse(response);
+      }
+    );
+
+    // UPDATE_JIRA_TICKET_STATUS
+    this.server.registerTool(
+      TOOLS.UPDATE_JIRA_TICKET_STATUS,
+      {
+        title: SCHEMAS.UPDATE_JIRA_TICKET_STATUS.title,
+        description: SCHEMAS.UPDATE_JIRA_TICKET_STATUS.description,
+        inputSchema: {
+          site: SCHEMAS.UPDATE_JIRA_TICKET_STATUS.inputSchema.site,
+          ticketKey: SCHEMAS.UPDATE_JIRA_TICKET_STATUS.inputSchema.ticketKey,
+          status: SCHEMAS.UPDATE_JIRA_TICKET_STATUS.inputSchema.status,
+        },
+      },
+      async (args) => {
+        const response = await handleUpdateJiraTicketStatus(args as any);
         return this.convertToolResponse(response);
       }
     );

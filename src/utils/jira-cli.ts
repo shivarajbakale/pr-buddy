@@ -381,4 +381,42 @@ export class JiraCli {
       throw new JiraCliError(`Failed to create ticket: ${error.message}`);
     }
   }
+
+  /**
+   * Transition a ticket to a new status
+   * @param ticketKey - Ticket key (e.g., "PROJ-123")
+   * @param status - Target status (e.g., "In Progress", "Done")
+   * @returns Updated ticket details
+   */
+  async transitionTicket(params: {
+    ticketKey: string;
+    status: string;
+  }): Promise<{ ticketKey: string; previousStatus: string; newStatus: string }> {
+    try {
+      // First, get the current ticket to know previous status
+      const getTicketCommand = `jira workitem search --jql "key = ${params.ticketKey}" --json`;
+      const currentTicketResult = await this.executeAcliCommand(getTicketCommand);
+      const currentTickets = JSON.parse(currentTicketResult);
+
+      if (!currentTickets || currentTickets.length === 0) {
+        throw new JiraCliError(`Ticket ${params.ticketKey} not found`);
+      }
+
+      const previousStatus = currentTickets[0]?.fields?.status?.name || "Unknown";
+
+      // Transition the ticket
+      let command = `jira workitem transition --key "${params.ticketKey}" --status "${params.status}" --yes`;
+
+      await this.executeAcliCommand(command);
+
+      // Return transition details
+      return {
+        ticketKey: params.ticketKey,
+        previousStatus: previousStatus,
+        newStatus: params.status,
+      };
+    } catch (error: any) {
+      throw new JiraCliError(`Failed to transition ticket: ${error.message}`);
+    }
+  }
 }

@@ -27,6 +27,7 @@ export {
   handleGetJiraBoards,
   handleGetMyJiraTickets,
   handleCreateJiraTicket,
+  handleUpdateJiraTicketStatus,
 } from "./jira-sprints.js";
 
 // Highlight Management (Performance Reviews)

@@ -536,3 +536,61 @@ function formatBoardsTable(boards: JiraBoard[]): string {
 
   return table;
 }
+
+/**
+ * Update JIRA ticket status (transition)
+ */
+export async function handleUpdateJiraTicketStatus(args: {
+  site?: string;
+  ticketKey: string;
+  status: string;
+}): Promise<ToolResponse> {
+  try {
+    const jiraCli = new JiraCli({
+      site: args.site,
+    });
+
+    // Check authentication
+    const isAuth = await jiraCli.checkAuth();
+    if (!isAuth) {
+      return {
+        content: [
+          {
+            type: "text",
+            text: `❌ ACLI not found or not authenticated.\n\nPlease install and authenticate:\n1. Install: npm install -g @atlassian/acli\n2. Login: acli login\n3. Try again`,
+          },
+        ],
+        isError: true,
+      };
+    }
+
+    // Transition the ticket
+    const result = await jiraCli.transitionTicket({
+      ticketKey: args.ticketKey,
+      status: args.status,
+    });
+
+    // Format output
+    let output = `✅ Ticket status updated successfully!\n\n`;
+    output += `| Field | Value |\n`;
+    output += `|-------|-------|\n`;
+    output += `| Ticket | ${result.ticketKey} |\n`;
+    output += `| Previous Status | ${result.previousStatus} |\n`;
+    output += `| New Status | ${result.newStatus} |\n`;
+
+    return {
+      content: [{ type: "text", text: output }],
+    };
+  } catch (error) {
+    console.error("Error updating JIRA ticket status:", error);
+    return {
+      content: [
+        {
+          type: "text",
+          text: `❌ Error updating ticket status: ${error instanceof Error ? error.message : "Unknown error"}`,
+        },
+      ],
+      isError: true,
+    };
+  }
+}
