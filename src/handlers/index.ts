@@ -28,3 +28,11 @@ export {
   handleGetMyJiraTickets,
   handleCreateJiraTicket,
 } from "./jira-sprints.js";
+
+// Highlight Management (Performance Reviews)
+export {
+  handleCreateHighlight,
+  handleGetMyHighlights,
+  handleGetHighlightSummary,
+  handleListApolloValues,
+} from "./highlights.js";

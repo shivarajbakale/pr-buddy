@@ -21,4 +21,10 @@ export const TOOLS = {
   GET_JIRA_BOARDS: "get_jira_boards",
   GET_MY_JIRA_TICKETS: "get_my_jira_tickets",
   CREATE_JIRA_TICKET: "create_jira_ticket",
+
+  // Highlight Management Tools (Performance Reviews)
+  CREATE_HIGHLIGHT: "create_highlight",
+  GET_MY_HIGHLIGHTS: "get_my_highlights",
+  GET_HIGHLIGHT_SUMMARY: "get_highlight_summary",
+  LIST_APOLLO_VALUES: "list_apollo_values",
 } as const;

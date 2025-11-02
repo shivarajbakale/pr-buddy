@@ -107,3 +107,54 @@ model JiraSprint {
   @@index([boardId])
   @@index([state])
 }
+
+// Apollo company values
+model ApolloValue {
+  id            String                 @id @default(cuid())
+  title         String                 @unique
+  description   String
+  highlights    HighlightApolloValue[]
+
+  createdAt     DateTime               @default(now())
+  updatedAt     DateTime               @updatedAt
+
+  @@index([title])
+}
+
+// Developer performance highlights
+model Highlight {
+  id            String                 @id @default(cuid())
+  userId        String                 // Developer identifier (GitHub username or email)
+  title         String                 // Brief title of the achievement
+  description   String?                // Optional detailed description
+  artifactType  String                 // "github_pr", "slack_message", "jira_ticket", "document", "demo", "meeting", "other"
+  artifactUrl   String                 // Link to the artifact (PR, Slack thread, doc, etc.)
+  achievedAt    DateTime               // When the achievement happened
+
+  // Relationships
+  apolloValues  HighlightApolloValue[]
+
+  createdAt     DateTime               @default(now())
+  updatedAt     DateTime               @updatedAt
+
+  @@index([userId])
+  @@index([achievedAt])
+  @@index([artifactType])
+  @@index([userId, achievedAt])
+}
+
+// Junction table linking highlights to Apollo values (many-to-many)
+model HighlightApolloValue {
+  id            String      @id @default(cuid())
+  highlightId   String
+  apolloValueId String
+
+  highlight     Highlight   @relation(fields: [highlightId], references: [id], onDelete: Cascade)
+  apolloValue   ApolloValue @relation(fields: [apolloValueId], references: [id], onDelete: Cascade)
+
+  createdAt     DateTime    @default(now())
+
+  @@unique([highlightId, apolloValueId])
+  @@index([highlightId])
+  @@index([apolloValueId])
+}

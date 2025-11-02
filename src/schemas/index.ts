@@ -53,6 +53,188 @@ const repositoryContextSchema = {
     ),
 };
 
+// =============================================================================
+// Highlight Management Tool Schema Definitions
+// =============================================================================
+
+const CREATE_HIGHLIGHT_SCHEMA = {
+  name: "create_highlight",
+  title: "Create Performance Highlight",
+  description:
+    "Create a new performance review highlight to track achievements and contributions. " +
+    "Each highlight represents a significant accomplishment and can demonstrate one or more Apollo company values. " +
+    "Use this to document PRs, Slack contributions, JIRA tickets, demos, meetings, or any other work artifacts.",
+  inputSchema: {
+    properties: {
+      userId: z
+        .string()
+        .min(1, "User ID is required")
+        .describe(
+          "Developer identifier (GitHub username or email, e.g., 'shivaraj@apollo.io' or 'shivarajbakale')"
+        ),
+      title: z
+        .string()
+        .min(1, "Title is required")
+        .max(255, "Title must be 255 characters or less")
+        .describe(
+          "Brief title of the achievement (e.g., 'Implemented MCP server with JIRA integration')"
+        ),
+      description: z
+        .string()
+        .max(2000, "Description must be 2000 characters or less")
+        .optional()
+        .describe(
+          "Optional detailed description of the achievement and its impact"
+        ),
+      artifactType: z
+        .enum([
+          "github_pr",
+          "slack_message",
+          "jira_ticket",
+          "document",
+          "demo",
+          "meeting",
+          "other",
+        ])
+        .describe(
+          "Type of artifact: github_pr, slack_message, jira_ticket, document, demo, meeting, or other"
+        ),
+      artifactUrl: z
+        .string()
+        .url("Must be a valid URL")
+        .describe(
+          "Link to the artifact (PR URL, Slack thread, doc link, etc.)"
+        ),
+      achievedAt: z
+        .string()
+        .regex(
+          /^\d{4}-\d{2}-\d{2}$/,
+          "Date must be in ISO format (YYYY-MM-DD)"
+        )
+        .describe(
+          "Date when the achievement happened in ISO format (YYYY-MM-DD, e.g., '2025-11-01')"
+        ),
+      apolloValueIds: z
+        .array(z.string())
+        .min(1, "At least one Apollo value is required")
+        .max(6, "Maximum 6 Apollo values allowed")
+        .describe(
+          "Array of Apollo value IDs this highlight demonstrates. Use list_apollo_values tool to get valid IDs."
+        ),
+    },
+  },
+} as const;
+
+const GET_MY_HIGHLIGHTS_SCHEMA = {
+  name: "get_my_highlights",
+  title: "Get My Highlights",
+  description:
+    "Get all performance highlights for a specific user with optional filtering. " +
+    "Returns highlights in a table format sorted by achievement date (most recent first). " +
+    "Use filters to narrow down results by date range, Apollo value, or artifact type.",
+  inputSchema: {
+    properties: {
+      userId: z
+        .string()
+        .min(1, "User ID is required")
+        .describe(
+          "Developer identifier (GitHub username or email, e.g., 'shivaraj@apollo.io')"
+        ),
+      startDate: z
+        .string()
+        .regex(
+          /^\d{4}-\d{2}-\d{2}$/,
+          "Date must be in ISO format (YYYY-MM-DD)"
+        )
+        .optional()
+        .describe(
+          "Optional start date filter in ISO format (YYYY-MM-DD, e.g., '2025-01-01'). Includes highlights from this date onwards."
+        ),
+      endDate: z
+        .string()
+        .regex(
+          /^\d{4}-\d{2}-\d{2}$/,
+          "Date must be in ISO format (YYYY-MM-DD)"
+        )
+        .optional()
+        .describe(
+          "Optional end date filter in ISO format (YYYY-MM-DD, e.g., '2025-03-31'). Includes highlights up to this date."
+        ),
+      apolloValue: z
+        .string()
+        .optional()
+        .describe(
+          "Optional Apollo value filter. Partial match supported (e.g., 'Ownership' will match 'Take Extreme Ownership')."
+        ),
+      artifactType: z
+        .enum([
+          "github_pr",
+          "slack_message",
+          "jira_ticket",
+          "document",
+          "demo",
+          "meeting",
+          "other",
+        ])
+        .optional()
+        .describe(
+          "Optional artifact type filter: github_pr, slack_message, jira_ticket, document, demo, meeting, or other"
+        ),
+    },
+  },
+} as const;
+
+const GET_HIGHLIGHT_SUMMARY_SCHEMA = {
+  name: "get_highlight_summary",
+  title: "Get Highlight Summary",
+  description:
+    "Get a comprehensive summary of performance highlights for a user including statistics and breakdowns. " +
+    "Shows total highlights, counts by Apollo value, counts by artifact type, and recent highlights. " +
+    "Perfect for performance reviews, quarterly retrospectives, and personal progress tracking.",
+  inputSchema: {
+    properties: {
+      userId: z
+        .string()
+        .min(1, "User ID is required")
+        .describe(
+          "Developer identifier (GitHub username or email, e.g., 'shivaraj@apollo.io')"
+        ),
+      startDate: z
+        .string()
+        .regex(
+          /^\d{4}-\d{2}-\d{2}$/,
+          "Date must be in ISO format (YYYY-MM-DD)"
+        )
+        .optional()
+        .describe(
+          "Optional start date for summary period in ISO format (YYYY-MM-DD, e.g., '2025-01-01')"
+        ),
+      endDate: z
+        .string()
+        .regex(
+          /^\d{4}-\d{2}-\d{2}$/,
+          "Date must be in ISO format (YYYY-MM-DD)"
+        )
+        .optional()
+        .describe(
+          "Optional end date for summary period in ISO format (YYYY-MM-DD, e.g., '2025-03-31')"
+        ),
+    },
+  },
+} as const;
+
+const LIST_APOLLO_VALUES_SCHEMA = {
+  name: "list_apollo_values",
+  title: "List Apollo Values",
+  description:
+    "List all available Apollo company values with their IDs and descriptions. " +
+    "Use this tool to get valid Apollo value IDs when creating highlights. " +
+    "Returns a table with ID, title, and description for each value.",
+  inputSchema: {
+    properties: {},
+  },
+} as const;
+
 export const SCHEMAS = {
   CREATE_PR: {
     title: "Create Pull Request",
@@ -649,5 +831,48 @@ export const SCHEMAS = {
           "Parent ticket key for creating subtasks (e.g., 'PUX-123'). Only use when creating a Subtask type."
         ),
     },
+  },
+
+  // Highlight Management Tools
+  CREATE_HIGHLIGHT: {
+    title: "Create Performance Highlight",
+    description: CREATE_HIGHLIGHT_SCHEMA.description,
+    inputSchema: {
+      userId: CREATE_HIGHLIGHT_SCHEMA.inputSchema.properties.userId,
+      title: CREATE_HIGHLIGHT_SCHEMA.inputSchema.properties.title,
+      description: CREATE_HIGHLIGHT_SCHEMA.inputSchema.properties.description,
+      artifactType: CREATE_HIGHLIGHT_SCHEMA.inputSchema.properties.artifactType,
+      artifactUrl: CREATE_HIGHLIGHT_SCHEMA.inputSchema.properties.artifactUrl,
+      achievedAt: CREATE_HIGHLIGHT_SCHEMA.inputSchema.properties.achievedAt,
+      apolloValueIds: CREATE_HIGHLIGHT_SCHEMA.inputSchema.properties.apolloValueIds,
+    },
+  },
+
+  GET_MY_HIGHLIGHTS: {
+    title: "Get My Highlights",
+    description: GET_MY_HIGHLIGHTS_SCHEMA.description,
+    inputSchema: {
+      userId: GET_MY_HIGHLIGHTS_SCHEMA.inputSchema.properties.userId,
+      startDate: GET_MY_HIGHLIGHTS_SCHEMA.inputSchema.properties.startDate,
+      endDate: GET_MY_HIGHLIGHTS_SCHEMA.inputSchema.properties.endDate,
+      apolloValue: GET_MY_HIGHLIGHTS_SCHEMA.inputSchema.properties.apolloValue,
+      artifactType: GET_MY_HIGHLIGHTS_SCHEMA.inputSchema.properties.artifactType,
+    },
+  },
+
+  GET_HIGHLIGHT_SUMMARY: {
+    title: "Get Highlight Summary",
+    description: GET_HIGHLIGHT_SUMMARY_SCHEMA.description,
+    inputSchema: {
+      userId: GET_HIGHLIGHT_SUMMARY_SCHEMA.inputSchema.properties.userId,
+      startDate: GET_HIGHLIGHT_SUMMARY_SCHEMA.inputSchema.properties.startDate,
+      endDate: GET_HIGHLIGHT_SUMMARY_SCHEMA.inputSchema.properties.endDate,
+    },
+  },
+
+  LIST_APOLLO_VALUES: {
+    title: "List Apollo Values",
+    description: LIST_APOLLO_VALUES_SCHEMA.description,
+    inputSchema: {},
   },
 } as const;

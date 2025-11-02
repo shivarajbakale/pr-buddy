@@ -26,6 +26,10 @@ import {
   handleGetJiraBoards,
   handleGetMyJiraTickets,
   handleCreateJiraTicket,
+  handleCreateHighlight,
+  handleGetMyHighlights,
+  handleGetHighlightSummary,
+  handleListApolloValues,
 } from "./handlers/index.js";
 
 class PRBuddyServer {
@@ -341,6 +345,82 @@ class PRBuddyServer {
       },
       async (args) => {
         const response = await handleCreateJiraTicket(args as any);
+        return this.convertToolResponse(response);
+      }
+    );
+
+    // Highlight Management Tools (Performance Reviews)
+
+    // CREATE_HIGHLIGHT
+    this.server.registerTool(
+      TOOLS.CREATE_HIGHLIGHT,
+      {
+        title: SCHEMAS.CREATE_HIGHLIGHT.title,
+        description: SCHEMAS.CREATE_HIGHLIGHT.description,
+        inputSchema: {
+          userId: SCHEMAS.CREATE_HIGHLIGHT.inputSchema.userId,
+          title: SCHEMAS.CREATE_HIGHLIGHT.inputSchema.title,
+          description: SCHEMAS.CREATE_HIGHLIGHT.inputSchema.description,
+          artifactType: SCHEMAS.CREATE_HIGHLIGHT.inputSchema.artifactType,
+          artifactUrl: SCHEMAS.CREATE_HIGHLIGHT.inputSchema.artifactUrl,
+          achievedAt: SCHEMAS.CREATE_HIGHLIGHT.inputSchema.achievedAt,
+          apolloValueIds: SCHEMAS.CREATE_HIGHLIGHT.inputSchema.apolloValueIds,
+        },
+      },
+      async (args) => {
+        const response = await handleCreateHighlight(args as any);
+        return this.convertToolResponse(response);
+      }
+    );
+
+    // GET_MY_HIGHLIGHTS
+    this.server.registerTool(
+      TOOLS.GET_MY_HIGHLIGHTS,
+      {
+        title: SCHEMAS.GET_MY_HIGHLIGHTS.title,
+        description: SCHEMAS.GET_MY_HIGHLIGHTS.description,
+        inputSchema: {
+          userId: SCHEMAS.GET_MY_HIGHLIGHTS.inputSchema.userId,
+          startDate: SCHEMAS.GET_MY_HIGHLIGHTS.inputSchema.startDate,
+          endDate: SCHEMAS.GET_MY_HIGHLIGHTS.inputSchema.endDate,
+          apolloValue: SCHEMAS.GET_MY_HIGHLIGHTS.inputSchema.apolloValue,
+          artifactType: SCHEMAS.GET_MY_HIGHLIGHTS.inputSchema.artifactType,
+        },
+      },
+      async (args) => {
+        const response = await handleGetMyHighlights(args as any);
+        return this.convertToolResponse(response);
+      }
+    );
+
+    // GET_HIGHLIGHT_SUMMARY
+    this.server.registerTool(
+      TOOLS.GET_HIGHLIGHT_SUMMARY,
+      {
+        title: SCHEMAS.GET_HIGHLIGHT_SUMMARY.title,
+        description: SCHEMAS.GET_HIGHLIGHT_SUMMARY.description,
+        inputSchema: {
+          userId: SCHEMAS.GET_HIGHLIGHT_SUMMARY.inputSchema.userId,
+          startDate: SCHEMAS.GET_HIGHLIGHT_SUMMARY.inputSchema.startDate,
+          endDate: SCHEMAS.GET_HIGHLIGHT_SUMMARY.inputSchema.endDate,
+        },
+      },
+      async (args) => {
+        const response = await handleGetHighlightSummary(args as any);
+        return this.convertToolResponse(response);
+      }
+    );
+
+    // LIST_APOLLO_VALUES
+    this.server.registerTool(
+      TOOLS.LIST_APOLLO_VALUES,
+      {
+        title: SCHEMAS.LIST_APOLLO_VALUES.title,
+        description: SCHEMAS.LIST_APOLLO_VALUES.description,
+        inputSchema: {},
+      },
+      async () => {
+        const response = await handleListApolloValues();
         return this.convertToolResponse(response);
       }
     );
