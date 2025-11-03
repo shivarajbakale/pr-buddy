@@ -172,6 +172,7 @@ export class JiraCli {
         labels: ticket.fields?.labels || [],
         created: ticket.fields?.created,
         updated: ticket.fields?.updated,
+        url: this.buildTicketUrl(ticket.key),
       }));
 
       // Calculate stats
@@ -348,11 +349,19 @@ export class JiraCli {
   }): Promise<JiraTicket> {
     try {
       // Build command
-      let command = `jira workitem create --project "${params.project}" --type "${params.type}" --summary "${params.summary.replace(/"/g, '\\"')}"`;
+      let command = `jira workitem create --project "${
+        params.project
+      }" --type "${params.type}" --summary "${params.summary.replace(
+        /"/g,
+        '\\"'
+      )}"`;
 
       // Add description if provided
       if (params.description) {
-        command += ` --description "${params.description.replace(/"/g, '\\"')}"`;
+        command += ` --description "${params.description.replace(
+          /"/g,
+          '\\"'
+        )}"`;
       }
 
       // Add assignee (default to @me if not specified)
@@ -382,7 +391,8 @@ export class JiraCli {
         summary: params.summary,
         status: ticketData.fields?.status?.name || "To Do",
         assignee: ticketData.fields?.assignee?.displayName || assignee,
-        priority: ticketData.fields?.priority?.name || params.priority || "Medium",
+        priority:
+          ticketData.fields?.priority?.name || params.priority || "Medium",
         type: params.type,
         storyPoints: 0,
         labels: params.labels || [],
@@ -404,18 +414,26 @@ export class JiraCli {
   async transitionTicket(params: {
     ticketKey: string;
     status: string;
-  }): Promise<{ ticketKey: string; previousStatus: string; newStatus: string; url: string }> {
+  }): Promise<{
+    ticketKey: string;
+    previousStatus: string;
+    newStatus: string;
+    url: string;
+  }> {
     try {
       // First, get the current ticket to know previous status
       const getTicketCommand = `jira workitem search --jql "key = ${params.ticketKey}" --json`;
-      const currentTicketResult = await this.executeAcliCommand(getTicketCommand);
+      const currentTicketResult = await this.executeAcliCommand(
+        getTicketCommand
+      );
       const currentTickets = JSON.parse(currentTicketResult);
 
       if (!currentTickets || currentTickets.length === 0) {
         throw new JiraCliError(`Ticket ${params.ticketKey} not found`);
       }
 
-      const previousStatus = currentTickets[0]?.fields?.status?.name || "Unknown";
+      const previousStatus =
+        currentTickets[0]?.fields?.status?.name || "Unknown";
 
       // Transition the ticket
       let command = `jira workitem transition --key "${params.ticketKey}" --status "${params.status}" --yes`;
