@@ -512,6 +512,11 @@ function formatTicketsTable(
         ? "🔄"
         : "📋";
 
+    // Make ticket key clickable if URL is available
+    const ticketKey = ticket.url
+      ? `[${ticket.key}](${ticket.url})`
+      : ticket.key;
+
     // Truncate summary
     const summary =
       ticket.summary.length > 50
@@ -523,7 +528,7 @@ function formatTicketsTable(
 
     const points = ticket.storyPoints || "-";
 
-    table += `| ${ticket.key} | ${escapePipes(summary)} | ${statusIcon} ${ticket.status} | ${escapePipes(ticket.assignee)} | ${ticket.type} | ${points} | ${ticket.priority} |\n`;
+    table += `| ${ticketKey} | ${escapePipes(summary)} | ${statusIcon} ${ticket.status} | ${escapePipes(ticket.assignee)} | ${ticket.type} | ${points} | ${ticket.priority} |\n`;
   });
 
   return table;
