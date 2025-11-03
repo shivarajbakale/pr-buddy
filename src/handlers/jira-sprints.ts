@@ -258,7 +258,13 @@ export async function handleCreateJiraTicket(args: {
     output += `## 🎫 Ticket Details\n\n`;
     output += `| Field | Value |\n`;
     output += `|-------|-------|\n`;
-    output += `| **Key** | **${ticket.key}** |\n`;
+
+    // Display ticket key as clickable link if URL is available
+    const ticketKeyDisplay = ticket.url
+      ? `**[${ticket.key}](${ticket.url})**`
+      : `**${ticket.key}**`;
+    output += `| **Key** | ${ticketKeyDisplay} |\n`;
+
     output += `| **Summary** | ${ticket.summary} |\n`;
     output += `| **Type** | ${ticket.type} |\n`;
     output += `| **Status** | ${ticket.status} |\n`;
@@ -574,7 +580,11 @@ export async function handleUpdateJiraTicketStatus(args: {
     let output = `✅ Ticket status updated successfully!\n\n`;
     output += `| Field | Value |\n`;
     output += `|-------|-------|\n`;
-    output += `| Ticket | ${result.ticketKey} |\n`;
+
+    // Display ticket key as clickable link
+    const ticketDisplay = `[${result.ticketKey}](${result.url})`;
+    output += `| Ticket | ${ticketDisplay} |\n`;
+
     output += `| Previous Status | ${result.previousStatus} |\n`;
     output += `| New Status | ${result.newStatus} |\n`;
 

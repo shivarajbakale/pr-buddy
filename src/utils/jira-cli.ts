@@ -15,6 +15,9 @@ import {
 
 const execAsync = promisify(exec);
 
+// Apollo JIRA site URL - always use this for constructing ticket URLs
+const APOLLO_JIRA_SITE = "https://apollopde.atlassian.net";
+
 export interface JiraContext {
   site?: string | undefined; // JIRA site URL (e.g., "yourcompany.atlassian.net")
   project?: string | undefined; // Default project key (e.g., "PUX")
@@ -25,6 +28,14 @@ export class JiraCli {
 
   constructor(context: JiraContext) {
     this.site = context.site;
+  }
+
+  /**
+   * Build JIRA ticket URL using Apollo site
+   * Always uses Apollo's JIRA site URL
+   */
+  private buildTicketUrl(ticketKey: string): string {
+    return `${APOLLO_JIRA_SITE}/browse/${ticketKey}`;
   }
 
   /**
@@ -279,6 +290,7 @@ export class JiraCli {
         labels: ticket.fields?.labels || [],
         created: ticket.fields?.created,
         updated: ticket.fields?.updated,
+        url: this.buildTicketUrl(ticket.key),
       }));
     } catch (error: any) {
       throw new JiraCliError(`Failed to search tickets: ${error.message}`);
@@ -376,6 +388,7 @@ export class JiraCli {
         labels: params.labels || [],
         created: ticketData.fields?.created || new Date().toISOString(),
         updated: ticketData.fields?.updated || new Date().toISOString(),
+        url: this.buildTicketUrl(ticketData.key),
       };
     } catch (error: any) {
       throw new JiraCliError(`Failed to create ticket: ${error.message}`);
@@ -391,7 +404,7 @@ export class JiraCli {
   async transitionTicket(params: {
     ticketKey: string;
     status: string;
-  }): Promise<{ ticketKey: string; previousStatus: string; newStatus: string }> {
+  }): Promise<{ ticketKey: string; previousStatus: string; newStatus: string; url: string }> {
     try {
       // First, get the current ticket to know previous status
       const getTicketCommand = `jira workitem search --jql "key = ${params.ticketKey}" --json`;
@@ -414,6 +427,7 @@ export class JiraCli {
         ticketKey: params.ticketKey,
         previousStatus: previousStatus,
         newStatus: params.status,
+        url: this.buildTicketUrl(params.ticketKey),
       };
     } catch (error: any) {
       throw new JiraCliError(`Failed to transition ticket: ${error.message}`);
