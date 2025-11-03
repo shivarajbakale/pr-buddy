@@ -26,6 +26,7 @@ export interface JiraTicket {
   created: string;
   updated: string;
   prLink?: string;
+  url?: string;
 }
 
 export interface JiraBoard {

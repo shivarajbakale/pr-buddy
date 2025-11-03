@@ -833,6 +833,38 @@ export const SCHEMAS = {
     },
   },
 
+  UPDATE_JIRA_TICKET_STATUS: {
+    title: "Update JIRA Ticket Status",
+    description:
+      "Transition a JIRA ticket to a new status (e.g., 'To Do' → 'In Progress' → 'Done'). " +
+      "This updates the ticket's workflow status. Common statuses include: To Do, In Progress, Done, Blocked, In Review.",
+    inputSchema: {
+      site: z
+        .string()
+        .url("Must be a valid URL")
+        .optional()
+        .describe(
+          "JIRA site URL (e.g., 'https://yourcompany.atlassian.net'). If not provided, uses default from ACLI config."
+        ),
+      ticketKey: z
+        .string()
+        .min(1, "Ticket key is required")
+        .regex(
+          /^[A-Z]+-\d+$/,
+          "Ticket key must be in format 'PROJECT-123' (e.g., 'PUX-456', 'INCIDENT-789')"
+        )
+        .describe(
+          "REQUIRED: JIRA ticket key to update (e.g., 'PUX-123', 'INCIDENT-456')"
+        ),
+      status: z
+        .string()
+        .min(1, "Status is required")
+        .describe(
+          "REQUIRED: Target status to transition to (e.g., 'In Progress', 'Done', 'Blocked', 'In Review'). Must be a valid status in your JIRA workflow."
+        ),
+    },
+  },
+
   // Highlight Management Tools
   CREATE_HIGHLIGHT: {
     title: "Create Performance Highlight",

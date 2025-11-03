@@ -21,6 +21,7 @@ export const TOOLS = {
   GET_JIRA_BOARDS: "get_jira_boards",
   GET_MY_JIRA_TICKETS: "get_my_jira_tickets",
   CREATE_JIRA_TICKET: "create_jira_ticket",
+  UPDATE_JIRA_TICKET_STATUS: "update_jira_ticket_status",
 
   // Highlight Management Tools (Performance Reviews)
   CREATE_HIGHLIGHT: "create_highlight",
