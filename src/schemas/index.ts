@@ -245,7 +245,7 @@ export const SCHEMAS = {
         .min(1, "PR title cannot be empty")
         .max(256, "PR title cannot exceed 256 characters")
         .describe(
-          "PR title. If already formatted as '[TICKET-###]- Title', it will be used as-is. Otherwise (including 'NOTICKET- Title'), the tool will prompt for JIRA ticket number and format automatically."
+          "PR title WITHOUT the JIRA ticket number. Do NOT include ticket numbers like '[PUX-123]-' or 'NOTICKET-' prefixes. Just provide the plain title (e.g., 'Fix login bug', 'Add dark mode'). The tool will automatically prompt for the JIRA ticket number and format the title as '[TICKET-###]- Title' or 'NOTICKET- Title'."
         ),
       body: z
         .string({ required_error: "PR body is required" })
@@ -765,7 +765,7 @@ export const SCHEMAS = {
   CREATE_JIRA_TICKET: {
     title: "Create JIRA Ticket",
     description:
-      "Create a new JIRA ticket (work item) with summary, description, assignee, and labels. Supports creating bugs, tasks, stories, and subtasks.",
+      "Create a new JIRA ticket (work item) with summary, description, assignee, and labels. Supports creating bugs, tasks, stories, and subtasks. Use confirm=false first to preview, then confirm=true to create.",
     inputSchema: {
       site: z
         .string()
@@ -800,7 +800,7 @@ export const SCHEMAS = {
         .max(32000, "Description cannot exceed 32000 characters")
         .optional()
         .describe(
-          "Detailed description of the ticket. Supports plain text or Atlassian Document Format (ADF). Include acceptance criteria, steps to reproduce, etc."
+          "Description of the ticket. IMPORTANT: Keep it SHORT and concise (2-3 sentences max). Use PLAIN TEXT ONLY - do NOT use markdown, bullet points, or special formatting. ACLI/JIRA may not handle markdown properly. Example: 'Users are unable to log in after password reset. The login button becomes unresponsive. Steps: 1. Reset password 2. Try to log in 3. Button does not work.'"
         ),
       assignee: z
         .string()
@@ -829,6 +829,13 @@ export const SCHEMAS = {
         .optional()
         .describe(
           "Parent ticket key for creating subtasks (e.g., 'PUX-123'). Only use when creating a Subtask type."
+        ),
+      confirm: z
+        .boolean()
+        .optional()
+        .default(false)
+        .describe(
+          "Set to true to create the ticket. If false (default), shows a preview for user review. Two-step flow: (1) call with confirm=false to preview, (2) call with confirm=true to create."
         ),
     },
   },

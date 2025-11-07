@@ -223,6 +223,7 @@ export async function handleCreateJiraTicket(args: {
   labels?: string[];
   priority?: string;
   parent?: string;
+  confirm?: boolean;
 }): Promise<ToolResponse> {
   try {
     const jiraCli = new JiraCli({
@@ -243,6 +244,44 @@ export async function handleCreateJiraTicket(args: {
       };
     }
 
+    // If confirm is false or not provided, show preview
+    if (!args.confirm) {
+      let preview = `# 📋 JIRA Ticket Preview\n\n`;
+      preview += `## Ticket Details to be Created\n\n`;
+      preview += `| Field | Value |\n`;
+      preview += `|-------|-------|\n`;
+      preview += `| **Project** | ${args.project} |\n`;
+      preview += `| **Type** | ${args.type} |\n`;
+      preview += `| **Summary** | ${args.summary} |\n`;
+
+      if (args.description) {
+        const truncatedDesc = args.description.length > 200
+          ? args.description.substring(0, 200) + "..."
+          : args.description;
+        preview += `| **Description** | ${truncatedDesc} |\n`;
+      }
+
+      preview += `| **Assignee** | ${args.assignee || "@me (yourself)"} |\n`;
+      preview += `| **Priority** | ${args.priority || "Medium (default)"} |\n`;
+
+      if (args.labels && args.labels.length > 0) {
+        preview += `| **Labels** | ${args.labels.join(", ")} |\n`;
+      }
+
+      if (args.parent) {
+        preview += `| **Parent** | ${args.parent} |\n`;
+      }
+
+      preview += `\n---\n\n`;
+      preview += `⚠️ **This is a preview only. No ticket has been created yet.**\n\n`;
+      preview += `To create this ticket, call the tool again with **confirm=true** and the same parameters.\n`;
+
+      return {
+        content: [{ type: "text", text: preview }],
+      };
+    }
+
+    // If confirm is true, create the ticket
     const ticket = await jiraCli.createTicket({
       project: args.project,
       type: args.type,

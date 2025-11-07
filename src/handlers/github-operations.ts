@@ -46,8 +46,8 @@ export async function handleCreatePR(
             hasTicket: {
               type: "boolean",
               title: "Is there a JIRA ticket for this PR?",
-              description: 'Select "No" if there is no associated JIRA ticket',
-              default: false,
+              description: "Uncheck if there is no associated JIRA ticket",
+              default: true,
             },
             ticketNumber: {
               type: "string",
@@ -64,9 +64,7 @@ export async function handleCreatePR(
       // Handle user response
       if (result.action === "cancel") {
         return {
-          content: [
-            { type: "text", text: "❌ PR creation cancelled by user" },
-          ],
+          content: [{ type: "text", text: "❌ PR creation cancelled by user" }],
           isError: true,
         };
       }
@@ -104,9 +102,7 @@ export async function handleCreatePR(
       // Handle preview environment response
       if (previewResult.action === "cancel") {
         return {
-          content: [
-            { type: "text", text: "❌ PR creation cancelled by user" },
-          ],
+          content: [{ type: "text", text: "❌ PR creation cancelled by user" }],
           isError: true,
         };
       }
@@ -133,7 +129,11 @@ export async function handleCreatePR(
       labels: args.labels,
     });
     // Build success message
-    let successMessage = `✅ Successfully created PR #${pr.number}: ${pr.title}\n🔗 URL: ${pr.url}\n📝 Status: ${pr.isDraft ? "Draft" : "Ready for Review"}`;
+    let successMessage = `✅ Successfully created PR #${pr.number}: ${
+      pr.title
+    }\n🔗 URL: ${pr.url}\n📝 Status: ${
+      pr.isDraft ? "Draft" : "Ready for Review"
+    }`;
 
     // Add preview environment info if enabled
     if (pr.labels.includes("Need_preview_env")) {
@@ -149,11 +149,14 @@ export async function handleCreatePR(
       ],
     };
   } catch (error: any) {
+    console.error("Error creating PR:", error);
     return {
       content: [
         {
           type: "text",
-          text: `❌ Error creating PR: ${error.message}`,
+          text: `❌ Error creating PR: ${
+            error instanceof Error ? error.message : "Unknown error"
+          }`,
         },
       ],
       isError: true,
@@ -226,9 +229,11 @@ export async function handleEditPR(args: {
     if (args.removeLabels && args.removeLabels.length > 0)
       changes.push(`removed labels: ${args.removeLabels.join(", ")}`);
 
-    const summary = `✅ Successfully updated PR #${args.number}\n\n📝 Changes made:\n${changes
-      .map((c) => `  • ${c}`)
-      .join("\n")}\n\n🔗 ${pr.url}`;
+    const summary = `✅ Successfully updated PR #${
+      args.number
+    }\n\n📝 Changes made:\n${changes.map((c) => `  • ${c}`).join("\n")}\n\n🔗 ${
+      pr.url
+    }`;
 
     return {
       content: [
@@ -409,7 +414,8 @@ export async function handleListMyPRs(args: {
       .join("\n");
 
     const filterSummary = [];
-    if (args.author && args.author !== "@me") filterSummary.push(`author: ${args.author}`);
+    if (args.author && args.author !== "@me")
+      filterSummary.push(`author: ${args.author}`);
     if (args.state) filterSummary.push(args.state);
     if (args.isDraft !== undefined)
       filterSummary.push(args.isDraft ? "drafts only" : "ready only");

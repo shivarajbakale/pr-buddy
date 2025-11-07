@@ -342,6 +342,7 @@ class PRBuddyServer {
           labels: SCHEMAS.CREATE_JIRA_TICKET.inputSchema.labels,
           priority: SCHEMAS.CREATE_JIRA_TICKET.inputSchema.priority,
           parent: SCHEMAS.CREATE_JIRA_TICKET.inputSchema.parent,
+          confirm: SCHEMAS.CREATE_JIRA_TICKET.inputSchema.confirm,
         },
       },
       async (args) => {
