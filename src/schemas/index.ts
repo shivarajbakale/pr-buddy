@@ -245,7 +245,7 @@ export const SCHEMAS = {
         .min(1, "PR title cannot be empty")
         .max(256, "PR title cannot exceed 256 characters")
         .describe(
-          "PR title. If already formatted as '[TICKET-###]- Title', it will be used as-is. Otherwise (including 'NOTICKET- Title'), the tool will prompt for JIRA ticket number and format automatically."
+          "PR title WITHOUT the JIRA ticket number. Do NOT include ticket numbers like '[PUX-123]-' or 'NOTICKET-' prefixes. Just provide the plain title (e.g., 'Fix login bug', 'Add dark mode'). The tool will automatically prompt for the JIRA ticket number and format the title as '[TICKET-###]- Title' or 'NOTICKET- Title'."
         ),
       body: z
         .string({ required_error: "PR body is required" })
