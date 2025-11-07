@@ -10,9 +10,9 @@ A comprehensive Model Context Protocol (MCP) Server that integrates GitHub CLI, 
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 ---
-<img width="4251" height="2934" alt="Mermaid Chart - Create complex, visual diagrams with text -2025-11-07-145910" src="https://github.com/user-attachments/assets/98a1c887-e8c2-4723-922b-a69fce96ccf6" />
+<img width="4251" height="2934" alt="Mermaid Chart - Create complex, visual diagrams with text -2025-11-07-150406" src="https://github.com/user-attachments/assets/792ffc67-a649-442c-9166-8e6639b49d19" />
+<img width="3005" height="1518" alt="Mermaid Chart - Create complex, visual diagrams with text -2025-11-07-150354" src="https://github.com/user-attachments/assets/6bc3b618-3aa6-4407-be4e-dd630d8d4d87" />
 
-<img width="3005" height="1518" alt="Mermaid Chart - Create complex, visual diagrams with text -2025-11-07-145936" src="https://github.com/user-attachments/assets/6ec29f60-9b53-4ea9-9176-f34e3365fc20" />
 
 ## 🎯 Overview
 
