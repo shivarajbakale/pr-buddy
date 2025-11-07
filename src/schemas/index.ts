@@ -765,7 +765,7 @@ export const SCHEMAS = {
   CREATE_JIRA_TICKET: {
     title: "Create JIRA Ticket",
     description:
-      "Create a new JIRA ticket (work item) with summary, description, assignee, and labels. Supports creating bugs, tasks, stories, and subtasks.",
+      "Create a new JIRA ticket (work item) with summary, description, assignee, and labels. Supports creating bugs, tasks, stories, and subtasks. Use confirm=false first to preview, then confirm=true to create.",
     inputSchema: {
       site: z
         .string()
@@ -829,6 +829,13 @@ export const SCHEMAS = {
         .optional()
         .describe(
           "Parent ticket key for creating subtasks (e.g., 'PUX-123'). Only use when creating a Subtask type."
+        ),
+      confirm: z
+        .boolean()
+        .optional()
+        .default(false)
+        .describe(
+          "Set to true to create the ticket. If false (default), shows a preview for user review. Two-step flow: (1) call with confirm=false to preview, (2) call with confirm=true to create."
         ),
     },
   },
