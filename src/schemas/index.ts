@@ -800,7 +800,7 @@ export const SCHEMAS = {
         .max(32000, "Description cannot exceed 32000 characters")
         .optional()
         .describe(
-          "Detailed description of the ticket. Supports plain text or Atlassian Document Format (ADF). Include acceptance criteria, steps to reproduce, etc."
+          "Description of the ticket. IMPORTANT: Keep it SHORT and concise (2-3 sentences max). Use PLAIN TEXT ONLY - do NOT use markdown, bullet points, or special formatting. ACLI/JIRA may not handle markdown properly. Example: 'Users are unable to log in after password reset. The login button becomes unresponsive. Steps: 1. Reset password 2. Try to log in 3. Button does not work.'"
         ),
       assignee: z
         .string()
